@@ -1,30 +1,52 @@
 import Link from "next/link";
 import styles from "./OrbitalStage.module.css";
 import { cn } from "@/lib/utils";
-import type { WorldSatellite } from "@/lib/data/worldStatus";
+import type { WorldSatellite, WorldIcon } from "@/lib/data/worldStatus";
+import {
+  MemoryIcon,
+  MoodIcon,
+  DateIcon,
+  SurpriseIcon,
+  StarIcon,
+  CouponIcon,
+  FlameIcon,
+  HeartIcon,
+} from "./components/icons";
 
 interface SatelliteProps {
   data: WorldSatellite;
   variant: "chip" | "card";
 }
 
+// Иконка спутника по его ключу — без эмодзи, штриховой контур в currentColor.
+const SATELLITE_ICON: Record<WorldIcon, (props: { className?: string }) => React.ReactElement> = {
+  memory: MemoryIcon,
+  mood: MoodIcon,
+  date: DateIcon,
+  surprise: SurpriseIcon,
+  goal: StarIcon,
+  coupon: CouponIcon,
+  flame: FlameIcon,
+  heart: HeartIcon,
+  photo: MemoryIcon,
+};
+
 // One satellite component, rendered two ways off the same data: a compact
 // pill for the garden chip rail (chip) or a fuller card with status and
 // progress (card). Never two definitions of the same satellite.
-// Если у спутника есть path — рендерим Link на его страницу; иначе — та же
-// заглушка `<a href="#">`, что была, чтобы не ломать плейсхолдеры.
 export function Satellite({ data, variant }: SatelliteProps) {
   const href = data.path;
+  const Icon = SATELLITE_ICON[data.icon] ?? StarIcon;
 
   const medallion = (
     <span
       aria-hidden
       className={cn(
-        "relative flex shrink-0 items-center justify-center rounded-full bg-(--hwd-primary-soft)",
-        variant === "chip" ? "size-8 text-base" : "size-10 text-xl"
+        "relative flex shrink-0 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--hwd-primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--hwd-primary-soft)_55%,#ffffff)] text-(--hwd-primary-deep) shadow-[inset_0_1px_0_rgb(255_255_255_/_0.7)]",
+        variant === "chip" ? "size-8" : "size-10"
       )}
     >
-      {data.emoji}
+      <Icon className={variant === "chip" ? "size-4" : "size-5"} />
       {data.badge && (
         <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-(--hwd-primary) px-1 text-[0.65rem] font-extrabold text-white shadow-md">
           {data.badge}
@@ -41,11 +63,11 @@ export function Satellite({ data, variant }: SatelliteProps) {
   );
 
   const chipClass =
-    "group relative flex shrink-0 items-center gap-2 rounded-full border border-white/60 bg-white/55 py-1.5 pl-1.5 pr-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/85 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)";
+    "group relative flex shrink-0 items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/70 py-1.5 pl-1.5 pr-3.5 shadow-[0_10px_24px_-16px_rgb(30_27_60_/_0.35)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--hwd-primary)_40%,transparent)] hover:bg-white/90 hover:shadow-[0_16px_30px_-18px_var(--hwd-glow)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)";
 
   const cardClass = cn(
-    "group relative flex items-center gap-3 rounded-2xl border border-white/70 bg-white/60 px-4 py-3 shadow-xl shadow-black/5 backdrop-blur-xl transition-all duration-300",
-    "hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)"
+    "group relative flex items-center gap-3 rounded-2xl border border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/70 px-4 py-3 shadow-[0_14px_34px_-22px_rgb(30_27_60_/_0.35),inset_0_1px_0_rgb(255_255_255_/_0.85)] backdrop-blur-md transition-all duration-300",
+    "hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--hwd-primary)_40%,transparent)] hover:bg-white/90 hover:shadow-[0_22px_44px_-24px_var(--hwd-glow)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)"
   );
 
   if (variant === "chip") {
@@ -100,7 +122,7 @@ export function Satellite({ data, variant }: SatelliteProps) {
             className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-black/10"
           >
             <span
-              className={`${styles.shimmer} block h-full rounded-full`}
+              className="block h-full rounded-full bg-(--hwd-primary)"
               style={{ width: `${data.progress}%` }}
             />
           </span>

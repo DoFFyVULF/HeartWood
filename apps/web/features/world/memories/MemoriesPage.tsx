@@ -17,20 +17,28 @@ function plural(n: number, one: string, few: string, many: string): string {
   return many;
 }
 
-// Стаггер на первичный вход — полароиды всплывают каскадом снизу,
-// в едином стиле со страницей купонов.
+// Полароиды «ложатся» на стол каскадом: каждый входит слегка наклонённым и
+// мягко садится в свой поворот, выпрямляясь. Направление наклона чередуется
+// по индексу — как если бы фото раскладывали рукой, по одному. Одна спокойная
+// пружина, без декоративного отскока; reduced-motion отключает всё целиком.
 const gridVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } },
+  show: { transition: { staggerChildren: 0.055, delayChildren: 0.1 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 26, scale: 0.96 },
+  hidden: (dir: number) => ({
+    opacity: 0,
+    y: -22,
+    rotate: 6 * dir,
+    scale: 0.97,
+  }),
   show: {
     opacity: 1,
     y: 0,
+    rotate: 0,
     scale: 1,
-    transition: { type: "spring", bounce: 0.32, duration: 0.6 } as const,
+    transition: { type: "spring", stiffness: 260, damping: 24, mass: 0.9 } as const,
   },
 };
 
@@ -197,14 +205,16 @@ export function MemoriesPage() {
           className={styles.grid}
           variants={gridVariants}
           initial={reduced ? false : "hidden"}
-          animate="show"
+          whileInView={reduced ? undefined : "show"}
+          viewport={{ once: true, amount: 0.12 }}
           aria-label="Воспоминания пары"
         >
-          <AnimatePresence mode="popLayout" initial={false}>
+          <AnimatePresence mode="popLayout">
             {memories.map((memory, i) => (
               <motion.li
                 key={memory.id}
                 layout
+                custom={i % 2 === 0 ? -1 : 1}
                 variants={itemVariants}
                 exit={{
                   opacity: 0,

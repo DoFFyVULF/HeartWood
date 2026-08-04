@@ -2,9 +2,20 @@
 // badge and stat reads from here, so the world's future reactivity (activity →
 // more glow, quiet → calmer) lands as data changes — never as layout edits.
 
+export type WorldIcon =
+  | "memory"
+  | "mood"
+  | "date"
+  | "surprise"
+  | "goal"
+  | "coupon"
+  | "flame"
+  | "heart"
+  | "photo";
+
 export interface WorldSatellite {
   key: string;
-  emoji: string;
+  icon: WorldIcon;
   label: string;
   status: string;
   /** Если у спутника есть своя страница — рендерим Link вместо заглушки. */
@@ -18,13 +29,13 @@ export interface WorldSatellite {
 }
 
 export interface HistoryEvent {
-  emoji: string;
+  icon: WorldIcon;
   text: string;
   time: string;
 }
 
 export interface WorldStat {
-  emoji: string;
+  icon: WorldIcon;
   value: string;
   label: string;
 }
@@ -35,46 +46,47 @@ export const worldStatus = {
   /** Стадия роста дерева (0–7) и прогресс к следующей (0–1). */
   level: 1 as const,
   levelProgress: 0.4,
-  greeting: "Добрый день, Аня и Дима 💛",
+  greeting: "Добрый день, Аня и Дима",
 
   satellites: [
     {
       key: "memories",
-      emoji: "💌",
+      icon: "memory",
       label: "Воспоминания",
-      status: "Пикник у реки 🧺",
+      status: "Пикник у реки",
       path: "/memories",
     },
     {
       key: "mood",
-      emoji: "😊",
+      icon: "mood",
       label: "Настроение",
-      status: "Аня в порядке 💛",
+      status: "Аня в порядке",
     },
     {
       key: "dates",
-      emoji: "📅",
+      icon: "date",
       label: "Свидания",
       status: "Сб, 2 авг · 19:00",
       badge: "1",
     },
     {
       key: "surprise",
-      emoji: "🎁",
+      icon: "surprise",
       label: "Сюрприз",
-      status: "Тебя ждёт сюрприз! 🎉",
+      status: "Тебя ждёт сюрприз",
       urgent: true,
     },
     {
       key: "goals",
-      emoji: "⭐",
+      icon: "goal",
       label: "Цели",
       status: "Копим на море",
+      path: "/goals",
       progress: 62,
     },
     {
       key: "coupons",
-      emoji: "🎫",
+      icon: "coupon",
       label: "Купоны",
       status: "2 активных купона",
       path: "/coupons",
@@ -84,18 +96,18 @@ export const worldStatus = {
 
   history: [
     {
-      emoji: "🧺",
+      icon: "memory",
       text: "Аня добавила воспоминание «Пикник у реки»",
       time: "2 часа назад",
     },
-    { emoji: "🔥", text: "День 127 вместе", time: "сегодня" },
-    { emoji: "🎁", text: "Дима открыл сюрприз", time: "вчера" },
+    { icon: "flame", text: "День 127 вместе", time: "сегодня" },
+    { icon: "surprise", text: "Дима открыл сюрприз", time: "вчера" },
   ] satisfies HistoryEvent[],
 
   stats: [
-    { emoji: "🔥", value: "127", label: "дней вместе" },
-    { emoji: "📸", value: "48", label: "воспоминаний" },
-    { emoji: "📅", value: "23", label: "свидания" },
-    { emoji: "🎫", value: "12", label: "купонов" },
+    { icon: "flame", value: "127", label: "дней вместе" },
+    { icon: "photo", value: "48", label: "воспоминаний" },
+    { icon: "date", value: "23", label: "свидания" },
+    { icon: "coupon", value: "12", label: "купонов" },
   ] satisfies WorldStat[],
 };

@@ -26,7 +26,7 @@ export function OrbitalStage() {
               Ваш мир живёт здесь
             </h3>
             <span className="shrink-0 text-xs font-semibold text-(--hwd-ink-soft) lg:hidden">
-              листайте →
+              листайте
             </span>
           </div>
 

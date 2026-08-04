@@ -35,7 +35,7 @@ export function WorldShell({ children }: { children: React.ReactNode }) {
       {/* Footer whisper — one quiet line closing the scene. */}
       <footer className="relative z-10 px-5 pb-28 pt-2 text-center lg:pb-10">
         <p className="text-sm font-semibold text-(--hwd-ink-soft)">
-          🍃 Каждый день — новая веточка вашей истории
+          Каждый день — новая веточка вашей истории
         </p>
       </footer>
 

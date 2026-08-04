@@ -23,6 +23,7 @@ import Particles from "@/features/world/tree/components/Particles";
 import HangingItems from "@/features/world/tree/components/HangingItems";
 import EventBurst from "@/features/world/tree/components/EventBurst";
 import LevelUpBurst from "@/features/world/tree/components/LevelUpBurst";
+import { FlameIcon } from "@/features/world/tree/components/icons";
 
 import { useInView } from "@/features/world/tree/hooks/useInView";
 import { useReducedMotion } from "@/features/world/tree/hooks/useReducedMotion";
@@ -259,13 +260,20 @@ export default function RelationshipTree({
       </svg>
 
       <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2">
-        <div className="flex items-center gap-1.5 rounded-full border border-white/70 bg-white/60 px-3 py-1 text-xs font-semibold text-(--hwd-ink) shadow-sm backdrop-blur-md">
+        <div className="flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/70 px-3 py-1 text-xs font-semibold text-(--hwd-ink) shadow-[0_10px_24px_-16px_rgb(30_27_60_/_0.35)] backdrop-blur-md">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-(--hwd-primary)" />
-          {species && <span>{species.emoji}</span>}
           <span>{species ? species.label : stageLabel}</span>
           <span className="opacity-50">·</span>
           <span className="opacity-75">{daysTogether} дн.</span>
-          {streak > 0 && (<><span className="opacity-50">·</span><span className="opacity-90">🔥 {streak}</span></>)}
+          {streak > 0 && (
+            <>
+              <span className="opacity-50">·</span>
+              <span className="inline-flex items-center gap-0.5 opacity-90">
+                <FlameIcon className="size-3.5 text-(--hwd-primary)" />
+                {streak}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

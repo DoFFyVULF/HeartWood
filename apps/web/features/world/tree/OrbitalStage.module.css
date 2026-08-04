@@ -24,18 +24,6 @@
   display: none;
 }
 
-/* Slow gradient shimmer across a goal progress bar. */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--hwd-primary),
-    var(--hwd-primary-deep),
-    var(--hwd-primary)
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2.6s linear infinite;
-}
-
 @keyframes twinkle {
   0%,
   100% {
@@ -57,11 +45,5 @@
   }
   100% {
     box-shadow: 0 0 0 0 transparent;
-  }
-}
-
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
   }
 }

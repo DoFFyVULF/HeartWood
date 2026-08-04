@@ -40,7 +40,6 @@ export interface SpeciesParticle {
 export interface TreeSpecies {
   id: TreeSpeciesId;
   label: string;
-  emoji: string;
   description: string;
   geometry: SpeciesGeometry;
   palette: SpeciesPalette;
@@ -52,7 +51,7 @@ export interface TreeSpecies {
 
 export const SPECIES: Record<TreeSpeciesId, TreeSpecies> = {
   oak: {
-    id: 'oak', label: 'Дуб', emoji: '🌳',
+    id: 'oak', label: 'Дуб',
     description: 'Крепость фундамента. Корни, которые не вырвет буря.',
     geometry: { trunkHScale: 0.95, trunkWScale: 1.45, crownScale: 1.5, branchAngle: 38, branchCurve: 0.3, droop: 0.0, canopyShape: 'dome' },
     palette: { bark: { base: '#4A3828', light: '#6B5440', dark: '#2E2018' }, leaf: ['#5FA85E', '#4A9050', '#3A7A42'], flower: ['#8FA860', '#A0B870'], fruit: '#8B6B3A', fruitGlow: '#A8844A' },
@@ -62,7 +61,7 @@ export const SPECIES: Record<TreeSpeciesId, TreeSpecies> = {
     swayScale: 0.7,
   },
   apple: {
-    id: 'apple', label: 'Яблоня', emoji: '🍎',
+    id: 'apple', label: 'Яблоня',
     description: 'Первые плоды. Каждый цветок — обещание урожая.',
     geometry: { trunkHScale: 0.95, trunkWScale: 1.0, crownScale: 1.2, branchAngle: 45, branchCurve: 0.4, droop: 0.1, canopyShape: 'dome' },
     palette: { bark: { base: '#6B4E3A', light: '#8A6A50', dark: '#4A3428' }, leaf: ['#7FD3A0', '#5FBF8A', '#3E9E6E'], flower: ['#FFFFFF', '#FFE8EE', '#FFD3E0', '#FFC0CB'], fruit: '#E84040', fruitGlow: '#FF6B6B' },
@@ -72,7 +71,7 @@ export const SPECIES: Record<TreeSpeciesId, TreeSpecies> = {
     swayScale: 1.0,
   },
   maple: {
-    id: 'maple', label: 'Клён', emoji: '🍁',
+    id: 'maple', label: 'Клён',
     description: 'Яркость чувств. Чем холоднее — тем сильнее горим.',
     geometry: { trunkHScale: 1.0, trunkWScale: 0.9, crownScale: 1.3, branchAngle: 50, branchCurve: 0.45, droop: 0.15, canopyShape: 'dome' },
     palette: { bark: { base: '#5A4438', light: '#7A6050', dark: '#3E2E24' }, leaf: ['#7FD3A0', '#5FBF8A', '#4AA870'], flower: ['#C9E64A', '#A8D030'], fruit: '#D4813A', fruitGlow: '#E8A85A' },
@@ -86,7 +85,7 @@ export const SPECIES: Record<TreeSpeciesId, TreeSpecies> = {
     swayScale: 1.1,
   },
   pine: {
-    id: 'pine', label: 'Сосна', emoji: '🌲',
+    id: 'pine', label: 'Сосна',
     description: 'Стойкость. Не увядает ни в какой сезон.',
     geometry: { trunkHScale: 1.25, trunkWScale: 0.8, crownScale: 0.75, branchAngle: 72, branchCurve: 0.12, droop: 0.08, canopyShape: 'tiers' },
     palette: { bark: { base: '#6B4A32', light: '#8A6448', dark: '#4A3020' }, leaf: ['#3E7A4A', '#2E6A3A', '#1E5A2E'], flower: ['#E8D060'], fruit: '#8B6040', fruitGlow: '#A87850' },
@@ -99,7 +98,7 @@ export const SPECIES: Record<TreeSpeciesId, TreeSpecies> = {
     swayScale: 0.6,
   },
   magnolia: {
-    id: 'magnolia', label: 'Магнолия', emoji: '💜',
+    id: 'magnolia', label: 'Магнолия',
     description: 'Расцвет. Древнейший цветок на земле — как ваша зрелая любовь.',
     geometry: { trunkHScale: 0.9, trunkWScale: 1.05, crownScale: 1.25, branchAngle: 48, branchCurve: 0.5, droop: 0.12, canopyShape: 'dome' },
     palette: { bark: { base: '#6A6A72', light: '#8A8A92', dark: '#4A4A52' }, leaf: ['#4A8A50', '#3A7A42', '#2E6A36'], flower: ['#F2A0C0', '#E880B0', '#FFFFFF', '#D070A0', '#C860D0'], fruit: '#C86090', fruitGlow: '#E880B0' },
@@ -112,7 +111,7 @@ export const SPECIES: Record<TreeSpeciesId, TreeSpecies> = {
     swayScale: 0.9,
   },
   willow: {
-    id: 'willow', label: 'Ива', emoji: '🌿',
+    id: 'willow', label: 'Ива',
     description: 'Нежность и глубина. Ветви до земли — как руки, тянущиеся к тебе.',
     geometry: { trunkHScale: 1.05, trunkWScale: 0.85, crownScale: 1.35, branchAngle: 55, branchCurve: 0.65, droop: 0.9, canopyShape: 'droop' },
     palette: { bark: { base: '#6B6B4A', light: '#8A8A62', dark: '#4A4A32' }, leaf: ['#A0D890', '#80C870', '#60B850'], flower: ['#E8E6A0', '#D8D680'] },
@@ -125,7 +124,7 @@ export const SPECIES: Record<TreeSpeciesId, TreeSpecies> = {
     swayScale: 1.5,
   },
   sakura: {
-    id: 'sakura', label: 'Сакура', emoji: '🌸',
+    id: 'sakura', label: 'Сакура',
     description: 'Высшая красота. Каждый лепесток — день, прожитый вместе. Осыпается — и это прекрасно.',
     geometry: { trunkHScale: 0.85, trunkWScale: 0.8, crownScale: 1.45, branchAngle: 58, branchCurve: 0.7, droop: 0.25, canopyShape: 'wide' },
     palette: { bark: { base: '#5C3A2E', light: '#7A4E3C', dark: '#3E2418' }, leaf: ['#A8D8A0', '#8FC98A', '#6FB06E'], flower: ['#FFB7C5', '#FF9EB5', '#FFC9D6', '#FFFFFF', '#F2789F'], fruit: '#C94F6A', fruitGlow: '#FF9EB5' },
