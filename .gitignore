@@ -1,0 +1,25 @@
+# Claude Code — локальная конфигурация и память
+.claude/
+
+# dependencies
+node_modules/
+
+# build outputs
+.next/
+out/
+dist/
+build/
+coverage/
+
+# misc
+.DS_Store
+*.pem
+*.log
+
+# env files
+.env*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

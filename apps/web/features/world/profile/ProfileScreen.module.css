@@ -1,0 +1,188 @@
+/* ═══════════════════════════════════════════════════════════
+   PROFILE SCREEN — sections of the page
+   Всё, что должно перекрашиваться вместе с темой, читает CSS-переменные
+   (--hwd-*). Тема профиля ЛОКАЛЬНАЯ: data-gender стоит на .screen (а не на
+   корне WorldShell). Сам фон всей страницы рисует ProfileAmbient — он тоже
+   живёт внутри этого data-gender, поэтому перекрашивается только страница
+   профиля, а хедер, фон мира и вкладки остаются на глобальном цвете.
+   ═══════════════════════════════════════════════════════════ */
+
+.screen {
+  position: relative;
+  animation: screenIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ───────────────────────── INTRO ───────────────────────── */
+.intro {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hwd-primary);
+  background: var(--hwd-primary-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 18%, transparent);
+  transition: color 0.6s ease, background 0.6s ease;
+}
+
+.title {
+  margin-top: 14px;
+  font-size: clamp(1.9rem, 5.4vw, 2.7rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--hwd-ink);
+  transition: color 0.6s ease;
+}
+
+.subtitle {
+  margin: 10px auto 0;
+  max-width: 46ch;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--hwd-ink-soft);
+  transition: color 0.6s ease;
+}
+
+/* ─────────────────────── SWITCHER ──────────────────────── */
+.switcher {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 24px auto 0;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px -12px rgba(30, 27, 60, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.switcherBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--hwd-ink-soft);
+  transition: color 0.3s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switcherBtn:focus-visible {
+  outline: 3px solid var(--hwd-glow);
+  outline-offset: 2px;
+}
+
+.switcherBtnActive {
+  color: #fff;
+}
+
+.switcherFill {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.3s ease;
+}
+
+.switcherEmoji,
+.switcherLabel,
+.switcherDot {
+  position: relative;
+}
+
+.switcherDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.switcherBtnActive .switcherDot {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+/* ──────────────────────── HINT ─────────────────────────── */
+.hint {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--hwd-ink-soft);
+  transition: color 0.5s ease;
+}
+
+.hintLine {
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+  transition: background 0.6s ease;
+}
+
+/* ───────────────────────── META ────────────────────────── */
+.meta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--hwd-ink);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 24px -14px rgba(30, 27, 60, 0.25);
+  backdrop-filter: blur(10px);
+  transition: color 0.5s ease;
+}
+
+/* ─────────────── REDUCED MOTION ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    animation: none;
+  }
+}

@@ -1,0 +1,199 @@
+/* Детальная страница воспоминания. Гамма — токены темы, как на MemoriesPage.
+   Спокойный премиум-язык: волосяные рамки, чистая поверхность, без
+   пульсирующих эмодзи-плейсхолдеров. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  min-height: 100dvh;
+  padding-top: 0.5rem;
+}
+
+/* ── Назад ── */
+.backRow {
+  align-self: stretch;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--hwd-ink-soft);
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  background: rgb(255 255 255 / 0.6);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 22%, transparent);
+  transition: color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.backLink:hover {
+  color: var(--hwd-primary);
+  background: #fff;
+  transform: translateX(-2px);
+}
+
+.backLink:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.backIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ── Hero ── */
+.hero {
+  display: flex;
+  justify-content: center;
+}
+
+.heroPolaroid {
+  width: min(360px, 90vw);
+}
+
+/* ── История ── */
+.storyWrap {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.story {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--hwd-ink);
+  text-align: center;
+  white-space: pre-line;
+}
+
+.storyEmpty {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--hwd-ink-soft);
+  text-align: center;
+}
+
+/* ── Галерея ── */
+.galleryWrap {
+  width: 100%;
+  max-width: 40rem;
+}
+
+/* ── Удаление ── */
+.dangerZone {
+  width: 100%;
+  max-width: 40rem;
+  margin-top: 0.5rem;
+}
+
+.deleteGhost {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hwd-ink-soft);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: color 0.2s, background 0.2s;
+  cursor: pointer;
+}
+
+.deleteGhost:hover {
+  color: var(--hwd-primary-deep);
+  background: var(--hwd-primary-soft);
+}
+
+.deleteGhost:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.deleteIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.confirmBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1.5px solid color-mix(in srgb, var(--hwd-primary) 25%, transparent);
+  box-shadow: 0 12px 28px -12px rgb(0 0 0 / 0.2);
+}
+
+.confirmText {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--hwd-ink);
+}
+
+.confirmBtns {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.cancelBtn,
+.deleteBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  transition: transform 0.15s, background 0.15s;
+  cursor: pointer;
+}
+
+.cancelBtn {
+  background: rgb(0 0 0 / 0.06);
+  color: var(--hwd-ink);
+}
+
+.deleteBtn {
+  background: var(--hwd-primary-deep);
+  color: #fff;
+}
+
+.cancelBtn:hover,
+.deleteBtn:hover {
+  transform: translateY(-1px);
+}
+
+.cancelBtn:focus-visible,
+.deleteBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+/* ── Плейсхолдер до гидрации ── */
+.placeholderCard {
+  display: grid;
+  place-items: center;
+  width: min(360px, 90vw);
+  aspect-ratio: 3 / 4;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.5);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 16%, transparent);
+  color: var(--hwd-ink-soft);
+  opacity: 0.85;
+}
+
+.placeholderIcon {
+  width: 3rem;
+  height: 3rem;
+}

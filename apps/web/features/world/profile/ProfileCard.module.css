@@ -1,0 +1,356 @@
+/* ═══════════════════════════════════════════════════════════
+   PROFILE CARD — одна карточка участника
+   transform анимирует framer-motion (x/y/rotateY/scale); слот отвечает за
+   «дыхание» (bob), чтобы не конфликтовать с framer.
+   Цвет пола карточки задаётся инлайном из GENDER_PALETTE — он не зависит от
+   активной темы, поэтому обе карточки всегда видны в «своих» цветах.
+   ═══════════════════════════════════════════════════════════ */
+
+.slot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--card-w, min(72vw, 340px));
+  height: 100%;
+  margin-left: calc(var(--card-w, min(72vw, 340px)) / -2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bob 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  height: calc(var(--card-w, min(72vw, 340px)) * 1.4);
+  border-radius: 30px;
+  overflow: hidden;
+  background: #fff;
+  outline: 2px solid transparent;
+  box-shadow:
+    0 30px 70px -22px rgba(30, 27, 60, 0.35),
+    0 4px 16px rgba(30, 27, 60, 0.08);
+  transition: box-shadow 0.6s ease, outline-color 0.4s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cardActive {
+  outline-color: rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 36px 80px -20px color-mix(in srgb, var(--hwd-primary) 55%, transparent),
+    0 0 50px -4px var(--hwd-glow);
+}
+
+.card:focus-visible {
+  outline-color: rgba(255, 255, 255, 0.9);
+}
+
+.cardInner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* ───────────────────── PHOTO AREA ───────────────────── */
+.photo {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* Крупная буква-водяной знак в углу градиентного плейсхолдера. */
+.watermark {
+  position: absolute;
+  right: -6px;
+  bottom: -26px;
+  font-size: clamp(120px, 26vw, 180px);
+  font-weight: 900;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.16);
+  user-select: none;
+  pointer-events: none;
+}
+
+.emoji {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(64px, 16vw, 92px);
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.25));
+  animation: emojiFloat 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes emojiFloat {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-10px) rotate(5deg);
+  }
+}
+
+/* Точечная фактура, чтобы градиент не выглядел плоским. */
+.texture {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Вуаль снизу, чтобы текст читался на любом фоне. */
+.scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 62%;
+  background: linear-gradient(
+    180deg,
+    transparent 8%,
+    rgba(15, 13, 40, 0.45) 58%,
+    rgba(15, 13, 40, 0.78) 100%
+  );
+  pointer-events: none;
+}
+
+/* ───────────────────── INFO OVERLAY ───────────────────── */
+.roleChip {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px 20px 18px;
+  color: #fff;
+}
+
+.name {
+  font-size: clamp(22px, 5.4vw, 28px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ───────────────────── LIVELINESS ───────────────────── */
+/* Живость: присутствие + настроение в одну строку под теглайном. */
+.statusRow {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.presenceDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+}
+
+/* «Сейчас онлайн» — точка пульсирует кольцом в цвете пола. */
+.presenceDotLive {
+  animation: dotPulse 2.2s ease-out infinite;
+}
+
+@keyframes dotPulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.presenceText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Чип настроения — эмодзи + короткая подпись. */
+.moodChip {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+.moodLabel {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* «Сердечко дня»: реакции партнёра + взаимные за месяц. */
+.reactionsRow {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reactionsList {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reactionPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+.mutual {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+.partnerRow {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.miniAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 13px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.partnerText b {
+  font-weight: 900;
+}
+
+.since {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+/* Цветная полоса на левом боку — «левый бок подсвечивается цветом».
+   На карточке-подсказке rotateY поворачивает именно этот край к зрителю. */
+.edgeGlow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  border-radius: 0 6px 6px 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Партнёр сейчас онлайн — бок «зажигается» пульсом от себя наружу. */
+.edgeGlowLive {
+  transform-origin: left center;
+  animation: edgeGlowPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes edgeGlowPulse {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scaleX(1.7);
+    opacity: 1;
+  }
+}
+
+/* ─────────────── REDUCED MOTION ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .slot,
+  .emoji,
+  .presenceDotLive,
+  .edgeGlowLive {
+    animation: none;
+  }
+  .card {
+    transition-duration: 0.01ms;
+  }
+}

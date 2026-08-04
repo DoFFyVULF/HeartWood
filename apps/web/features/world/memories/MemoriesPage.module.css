@@ -1,0 +1,453 @@
+/* Страница «Воспоминания» — корень фичи.
+   Фон прозрачный, как у остальных мировых страниц: AmbientBackground даёт
+   пастельный градиент и частицы, а карточки-полароиды читаются за счёт
+   теней. Вся гамма — из токенов темы (--hwd-*), перекрашивается по гендеру.
+   Спокойный премиум-язык: чистые поверхности, волосяные рамки, одна мягкая
+   тень, без градиентных заголовков и декоративных анимаций. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+  position: relative;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.headerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 768px) {
+  .headerRow {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+}
+
+.heading {
+  min-width: 0;
+}
+
+/* Мелкая «глава» над заголовком — декоративный штрих */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.8rem;
+  margin-bottom: 0.35rem;
+  width: fit-content;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hwd-primary-soft) 55%, #ffffff);
+  color: var(--hwd-primary-deep);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 26%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.eyebrowDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hwd-primary);
+  box-shadow: 0 0 12px var(--hwd-glow);
+  animation: pulseDot 2.2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.35);
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2rem, 5.2vw, 3rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--hwd-ink);
+}
+
+.subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 0.975rem;
+  font-weight: 500;
+  color: var(--hwd-ink-soft);
+  max-width: 28rem;
+  line-height: 1.5;
+}
+
+/* Кнопка создания — единый акцентный градиент, без блика-«блика» */
+.createBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--hwd-primary), var(--hwd-primary-deep));
+  box-shadow: 0 12px 26px -12px var(--hwd-glow);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s;
+  cursor: pointer;
+  flex: none;
+}
+
+.createBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -14px var(--hwd-glow);
+}
+
+.createBtn:active {
+  transform: translateY(0);
+}
+
+.createBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.createIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* ── Сводка: одна стеклянная панель с двумя ячейками ── */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.78), rgb(255 255 255 / 0.52));
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 16%, rgb(255 255 255 / 0.8));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 12px 30px -18px color-mix(in srgb, var(--hwd-glow) 45%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
+  overflow: hidden;
+}
+
+.summaryItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.7rem 0.85rem;
+}
+
+.summaryItem + .summaryItem {
+  border-left: 1px solid color-mix(in srgb, var(--hwd-primary) 14%, transparent);
+}
+
+.summaryIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.65rem;
+  color: var(--hwd-primary-deep);
+  background: linear-gradient(
+    135deg,
+    var(--hwd-primary-soft) 0%,
+    color-mix(in srgb, var(--hwd-primary-soft) 55%, #ffffff) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 26%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.summarySvg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.summaryBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.summaryNum {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--hwd-ink);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryLabel {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hwd-ink-soft);
+  white-space: nowrap;
+}
+
+/* ── Разделитель: тонкая градиентная линия с сердечком ── */
+.divider {
+  position: relative;
+  height: 1px;
+  margin-top: 0.6rem;
+  border-radius: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--hwd-ink-soft) 25%, transparent) 20%,
+    color-mix(in srgb, var(--hwd-primary) 45%, transparent) 50%,
+    color-mix(in srgb, var(--hwd-ink-soft) 25%, transparent) 80%,
+    transparent 100%
+  );
+}
+
+.divider::before {
+  content: "♥";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0 0.8rem;
+  font-size: 0.95rem;
+  color: var(--hwd-primary);
+  background: transparent;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Предупреждения ── */
+.storageWarn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(
+    135deg,
+    var(--hwd-primary-soft) 0%,
+    color-mix(in srgb, var(--hwd-primary-soft) 70%, #ffffff) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 40%, transparent);
+  color: var(--hwd-primary-deep);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  box-shadow:
+    0 10px 24px -12px var(--hwd-glow),
+    inset 0 1px 0 rgb(255 255 255 / 0.6);
+}
+
+.storageWarnIcon {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.errorToast {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(
+    135deg,
+    var(--hwd-primary-soft) 0%,
+    color-mix(in srgb, var(--hwd-primary-soft) 70%, #ffffff) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 40%, transparent);
+  color: var(--hwd-primary-deep);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  box-shadow:
+    0 10px 24px -12px var(--hwd-glow),
+    inset 0 1px 0 rgb(255 255 255 / 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.errorToastIcon {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* ── Сетка ── */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 2rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
+    gap: 2.5rem 1.75rem;
+  }
+}
+
+.gridItem {
+  min-width: 0;
+}
+
+/* ── Пустое состояние ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 3rem 1.5rem 2rem;
+  text-align: center;
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.7), rgb(255 255 255 / 0.45));
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 18%, rgb(255 255 255 / 0.8));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.emptyBadge {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 1.1rem;
+  color: var(--hwd-primary-deep);
+  background: linear-gradient(
+    135deg,
+    var(--hwd-primary-soft) 0%,
+    color-mix(in srgb, var(--hwd-primary-soft) 55%, #ffffff) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 26%, transparent);
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--hwd-glow) 60%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.8);
+  margin-bottom: 0.4rem;
+}
+
+.emptyIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.emptyTitle {
+  margin: 0.2rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--hwd-ink);
+}
+
+.emptyText {
+  margin: 0;
+  max-width: 22rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--hwd-ink-soft);
+}
+
+.emptyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+  padding: 0.72rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--hwd-primary), var(--hwd-primary-deep));
+  box-shadow: 0 14px 28px -14px var(--hwd-glow);
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s;
+}
+
+.emptyBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px -16px var(--hwd-glow);
+}
+
+.emptyBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.emptyBtnIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ── Вспышка «камеры» ── */
+.flash {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgb(255 255 255 / 1) 0%,
+    rgb(255 255 255 / 0.85) 50%,
+    rgb(255 255 255 / 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+/* ═══ Entrance (pure CSS — контент виден даже без JS) ═══ */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stretchIn {
+  from {
+    opacity: 1;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.entranceRise {
+  animation: riseIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.entranceStretch {
+  animation: stretchIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entranceRise,
+  .entranceStretch,
+  .eyebrowDot {
+    animation: none !important;
+  }
+}

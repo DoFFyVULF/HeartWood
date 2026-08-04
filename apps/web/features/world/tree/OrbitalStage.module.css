@@ -1,0 +1,67 @@
+/* Decorative micro-animations for the world stage. All positions stay static —
+ * only the dashed ring rotates and decorative dots/sparkles move — so the
+ * scene never reflows and reduced-motion kills everything at the global level. */
+
+/* Twinkling sparkles drifting around the sapling. */
+.twinkle {
+  animation: twinkle 2.8s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* Urgent satellites (surprise waiting, unread chat) — a small glowing dot
+ * that ripples outward. */
+.pingDot {
+  animation: ping-dot 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Hidden scrollbar on the satellite chip rail — the rail still scrolls. */
+.chipRail {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.chipRail::-webkit-scrollbar {
+  display: none;
+}
+
+/* Slow gradient shimmer across a goal progress bar. */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--hwd-primary),
+    var(--hwd-primary-deep),
+    var(--hwd-primary)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.6s linear infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes ping-dot {
+  0% {
+    box-shadow: 0 0 0 0 var(--hwd-glow);
+  }
+  70% {
+    box-shadow: 0 0 0 9px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}

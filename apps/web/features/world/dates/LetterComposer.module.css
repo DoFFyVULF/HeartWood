@@ -1,0 +1,1276 @@
+/* ════════════════════════════════════════════════════════════════
+   Студия письма — светлая тема на токенах приложения (--hwd-*).
+   Оформление в стиле остальных карточек приложения: белый «стеклянный»
+   фон, мягкие границы --hwd-primary-soft, шрифт Nunito.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ─── Базовые переменные ──────────────────────────────────────── */
+
+.studio {
+  --ink: var(--hwd-ink);
+  --ink-soft: var(--hwd-ink-soft);
+
+  --paper: #ffffff;
+
+  /* размеры сцены (лист / конверт) — синхронизированы с JSX */
+  --sheetW: min(320px, 80vw);
+  --sheetH: 400px;
+  --segH: 133.33px;
+  --envW: min(320px, 80vw);
+
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  padding: clamp(16px, 2.5vw, 28px) clamp(14px, 3vw, 36px) clamp(28px, 4vw, 44px);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(1.25rem);
+  -webkit-backdrop-filter: blur(1.25rem);
+  box-shadow:
+    0 24px 60px -16px rgb(0 0 0 / 0.2),
+    0 4px 12px -4px rgb(0 0 0 / 0.08);
+  color: var(--ink);
+  font-family: var(--font-nunito, "Nunito", ui-sans-serif, system-ui, sans-serif);
+}
+
+/* ─── Шаги (роут) ─────────────────────────────────────────────── */
+
+.top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 4px 4px 0;
+  overflow: hidden;
+}
+
+.route {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.routeItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.routeSep {
+  width: 16px;
+  height: 1px;
+  flex: none;
+  background: color-mix(in srgb, var(--hwd-primary) 25%, transparent);
+}
+
+.routeMark {
+  display: inline-block;
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  color: color-mix(in srgb, var(--hwd-primary-deep) 45%, transparent);
+  transition: color 0.3s, transform 0.3s;
+}
+
+.routeActive {
+  color: var(--hwd-primary-deep);
+  transform: scale(1.12);
+}
+
+.routeDone {
+  color: var(--hwd-primary);
+}
+
+.routeCaption {
+  margin: 0;
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--hwd-primary-deep);
+  white-space: nowrap;
+}
+
+/* ─── Компоновка: сцена + панель ──────────────────────────────── */
+
+.layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr minmax(300px, 380px);
+  gap: clamp(20px, 3vw, 40px);
+  align-items: start;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* На шаге «sent» панель скрыта — сцена занимает всю ширину, по центру */
+.layoutSent {
+  grid-template-columns: 1fr;
+  max-width: 700px;
+  width: 100%;
+}
+
+.stageSent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ─── Сцена ───────────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  min-height: 620px;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background:
+    radial-gradient(460px 320px at 70% 12%, color-mix(in srgb, var(--hwd-primary-soft) 45%, #fff), transparent 68%),
+    rgb(255 255 255 / 0.6);
+  border: 1px solid rgb(255 255 255 / 0.8);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 8px 28px -12px rgb(0 0 0 / 0.1);
+}
+
+.stageHint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.85);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  box-shadow: 0 6px 16px -10px rgb(30 27 60 / 0.16);
+}
+
+.stageHint i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--hwd-primary);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.7); opacity: 0.5; }
+}
+
+/* ─── Лист с письмом ──────────────────────────────────────────── */
+
+.sheetScene {
+  position: absolute;
+  top: 16px;
+  left: calc(50% - var(--sheetW) / 2 - 40px);
+  width: var(--sheetW);
+  will-change: transform;
+}
+
+.sheet {
+  position: relative;
+  width: var(--sheetW);
+  height: var(--sheetH);
+  background:
+    linear-gradient(90deg, transparent 0 40px, color-mix(in srgb, var(--hwd-primary) 38%, transparent) 40px 41.5px, transparent 41.5px),
+    repeating-linear-gradient(transparent 0 25px, color-mix(in srgb, var(--hwd-primary) 20%, transparent) 25px 26px),
+    var(--paper);
+  border-radius: 3px;
+  box-shadow:
+    0 22px 40px -20px color-mix(in srgb, var(--hwd-primary-deep) 26%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 14%, transparent);
+}
+
+.sheetShadow {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -8px;
+  height: 14px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hwd-primary-deep) 14%, transparent);
+  filter: blur(7px);
+}
+
+.sheetInner {
+  position: absolute;
+  inset: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--hwd-ink);
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+}
+
+.sheetHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  opacity: 0.72;
+}
+
+.sheetGreet {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.sheetMsg {
+  margin: 0;
+  flex: 1;
+  font-size: 19px;
+  line-height: 1.55;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.sheetMsgGhost {
+  opacity: 0.35;
+}
+
+.sheetPs {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.sheetSign {
+  margin: 0;
+  text-align: right;
+  font-size: 20px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* ─── Сгиб втрое ──────────────────────────────────────────────── */
+
+.foldRig {
+  position: absolute;
+  top: 16px;
+  left: calc(50% - var(--sheetW) / 2 - 40px);
+  width: var(--sheetW);
+  height: var(--sheetH);
+  perspective: 1200px;
+  transform: rotate(-0.8deg);
+}
+
+.seg {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: var(--segH);
+  transform-style: preserve-3d;
+}
+
+.seg0 { top: 0; }
+.seg1 { top: var(--segH); }
+.seg2 { top: calc(var(--segH) * 2); }
+
+.segFace {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 10%, transparent);
+}
+
+.seg0 .segFace { border-radius: 3px 3px 0 0; }
+.seg2 .segFace { border-radius: 0 0 3px 3px; }
+
+.seg0 .segFace::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+  background: linear-gradient(transparent, color-mix(in srgb, var(--hwd-primary-deep) 12%, transparent));
+}
+
+.seg2 .segFace::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 16px;
+  background: linear-gradient(color-mix(in srgb, var(--hwd-primary-deep) 12%, transparent), transparent);
+}
+
+.segSlice {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: var(--sheetH);
+  background:
+    linear-gradient(90deg, transparent 0 40px, color-mix(in srgb, var(--hwd-primary) 38%, transparent) 40px 41.5px, transparent 41.5px),
+    repeating-linear-gradient(transparent 0 25px, color-mix(in srgb, var(--hwd-primary) 20%, transparent) 25px 26px),
+    var(--paper);
+}
+
+.segBack {
+  position: absolute;
+  inset: 0;
+  transform: rotateX(180deg);
+  backface-visibility: hidden;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hwd-primary-soft) 55%, #fff),
+    color-mix(in srgb, var(--hwd-primary-soft) 72%, #fff)
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 14%, transparent),
+    inset 0 -10px 16px -12px color-mix(in srgb, var(--hwd-primary-deep) 22%, transparent);
+}
+
+/* ─── Стопка ──────────────────────────────────────────────────── */
+
+.stack {
+  position: absolute;
+  top: calc(16px + var(--segH));
+  left: calc(50% - var(--sheetW) / 2 - 40px);
+  width: var(--sheetW);
+  height: var(--segH);
+  pointer-events: none;
+}
+
+.stackGhost {
+  opacity: 0;
+}
+
+.stackTop {
+  --pd: color-mix(in srgb, var(--pb) 78%, var(--hwd-primary-deep));
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(transparent 0 25px, color-mix(in srgb, var(--hwd-primary) 22%, transparent) 25px 26px),
+    linear-gradient(180deg, color-mix(in srgb, var(--pb) 60%, #fffdf4), var(--pd));
+  box-shadow:
+    0 3px 0 -1px color-mix(in srgb, var(--hwd-primary-soft) 72%, #fff),
+    0 6px 0 -2px color-mix(in srgb, var(--hwd-primary-soft) 88%, #fff),
+    0 14px 24px -10px color-mix(in srgb, var(--hwd-primary-deep) 30%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 14%, transparent);
+}
+
+.stackTop::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 46%;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--hwd-primary-deep) 16%, transparent);
+}
+
+/* ─── Конверт ─────────────────────────────────────────────────── */
+
+.envPos {
+  position: absolute;
+  left: calc(50% - var(--envW) / 2 + 40px);
+  bottom: 40px;
+  width: var(--envW);
+}
+
+.envScale {
+  will-change: transform, opacity;
+}
+
+.env {
+  --pd: color-mix(in srgb, var(--pb) 84%, var(--hwd-primary-deep));
+  position: relative;
+  width: var(--envW);
+  aspect-ratio: 340 / 230;
+  perspective: 1100px;
+}
+
+.envBack {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--pb), var(--pd));
+  box-shadow:
+    0 26px 44px -20px rgb(70 40 20 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    inset 0 0 0 1px rgb(90 50 30 / 0.12);
+}
+
+.envHeart {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-size: 110px;
+  color: color-mix(in srgb, var(--hwd-primary) 8%, transparent);
+}
+
+/* Кармашек конверта */
+.pocket {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.fold {
+  position: absolute;
+  inset: 0;
+}
+
+.foldL {
+  clip-path: polygon(0 0, 0 100%, 54% 50%);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--pd) 84%, var(--hwd-primary-deep) 16%),
+    color-mix(in srgb, var(--pb) 86%, #fff 14%)
+  );
+  filter: drop-shadow(2px 0 3px rgb(60 25 15 / 0.18));
+}
+
+.foldR {
+  clip-path: polygon(100% 0, 100% 100%, 46% 50%);
+  background: linear-gradient(
+    -100deg,
+    color-mix(in srgb, var(--pd) 84%, var(--hwd-primary-deep) 16%),
+    color-mix(in srgb, var(--pb) 86%, #fff 14%)
+  );
+  filter: drop-shadow(-2px 0 3px rgb(60 25 15 / 0.18));
+}
+
+.foldB {
+  clip-path: polygon(0 100%, 50% 42%, 100% 100%);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--pb) 88%, #fff 12%),
+    color-mix(in srgb, var(--pd) 86%, var(--hwd-primary-deep) 14%)
+  );
+  filter: drop-shadow(0 -2px 3px rgb(60 25 15 / 0.18));
+}
+
+/* Адрес на конверте */
+.addr {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.addrLine {
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--hwd-ink);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addrFrom {
+  font-size: 14px;
+  opacity: 0.75;
+}
+
+.micro {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--hwd-primary-deep) 50%, transparent);
+  white-space: nowrap;
+}
+
+.envStamp {
+  position: absolute;
+  right: 12px;
+  top: 58%;
+  z-index: 5;
+  font-size: 20px;
+  line-height: 1;
+  padding: 6px 7px;
+  border: 3px dotted #fffdf4;
+  border-radius: 2px;
+  background: linear-gradient(150deg, #fbeef0, #f2d3da);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.15);
+}
+
+.envPostmark {
+  position: absolute;
+  left: -22px;
+  top: -8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgb(90 60 40 / 0.35);
+  transform: rotate(-12deg);
+}
+
+.envPostmark::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgb(90 60 40 / 0.3);
+}
+
+/* Клапан */
+.flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56%;
+  z-index: 50;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  filter: drop-shadow(0 8px 12px rgb(60 25 15 / 0.25));
+}
+
+.flapFace,
+.flapBack {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  backface-visibility: hidden;
+}
+
+.flapFace {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--pb) 90%, #fff 10%) 0%,
+    var(--pd) 94%
+  );
+}
+
+.flapBack {
+  transform: rotateX(180deg);
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--pd) 78%, var(--hwd-primary-deep) 22%) 0%,
+    color-mix(in srgb, var(--pd) 92%, #fff 8%) 100%
+  );
+}
+
+.sealBlank {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(90 50 30 / 0.14);
+  filter: blur(2px);
+}
+
+.mouth {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+/* ─── Воск и печать ───────────────────────────────────────────── */
+
+.waxTarget {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  transform: translate(-50%, -50%);
+  width: 96px;
+  height: 96px;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  touch-action: none;
+}
+
+.waxTarget:focus-visible {
+  outline: 2px solid var(--hwd-primary);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+.waxPuddleWrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+}
+
+.waxPuddle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62px;
+  height: 62px;
+  margin: -31px 0 0 -31px;
+  border-radius: 46% 54% 52% 48% / 50% 46% 54% 50%;
+  box-shadow:
+    0 6px 14px -4px color-mix(in srgb, var(--hwd-primary-deep) 38%, transparent),
+    inset 0 2px 5px rgb(255 255 255 / 0.35),
+    inset 0 -3px 6px rgb(0 0 0 / 0.25);
+}
+
+.waxPuddle::after {
+  content: "";
+  position: absolute;
+  left: 20%;
+  top: 14%;
+  width: 26%;
+  height: 18%;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.4);
+  filter: blur(2px);
+}
+
+.waxHint {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.9);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--hwd-primary-deep);
+  box-shadow: 0 4px 10px -4px rgb(50 30 90 / 0.2);
+  animation: pulse2 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse2 {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+.seal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  border-radius: 46% 54% 52% 48% / 50% 46% 54% 50%;
+  box-shadow:
+    0 8px 16px -4px color-mix(in srgb, var(--hwd-primary-deep) 35%, transparent),
+    inset 0 2px 5px rgb(255 255 255 / 0.35),
+    inset 0 -3px 6px rgb(0 0 0 / 0.25);
+}
+
+.seal::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: inherit;
+  border: 1.5px solid rgb(255 255 255 / 0.28);
+}
+
+.holdRing {
+  position: absolute;
+  inset: 0;
+}
+
+.ringTrack {
+  stroke: color-mix(in srgb, var(--hwd-primary) 20%, transparent);
+}
+
+.ringFill {
+  stroke: var(--hwd-primary);
+  filter: drop-shadow(0 0 6px var(--hwd-glow));
+}
+
+/* Искры и шлейф */
+.sparks {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+
+.spark {
+  position: absolute;
+  font-size: 13px;
+  will-change: transform, opacity;
+}
+
+.trailZone {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.trail {
+  position: absolute;
+  font-size: 17px;
+  will-change: transform, opacity;
+}
+
+/* ─── Квитанция ───────────────────────────────────────────────── */
+
+.receipt {
+  position: relative;
+  margin: 30px auto 48px;
+  width: min(430px, 88%);
+  padding: 28px 30px 32px;
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 0.8);
+  border: 1px solid rgb(255 255 255 / 0.8);
+  backdrop-filter: blur(1.25rem);
+  color: var(--hwd-ink);
+  box-shadow:
+    0 24px 60px -16px rgb(0 0 0 / 0.24),
+    0 4px 12px -4px rgb(0 0 0 / 0.08);
+}
+
+.receiptStamp {
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--hwd-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 40%, transparent);
+  color: var(--hwd-primary-deep);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(9deg);
+  animation: stampIn 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) 0.7s backwards;
+}
+
+@keyframes stampIn {
+  from { transform: rotate(9deg) scale(2.4); opacity: 0; }
+  to   { transform: rotate(9deg) scale(1); opacity: 0.9; }
+}
+
+.receiptTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.receiptNum {
+  margin: 3px 0 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.receiptRows {
+  margin: 0 0 16px;
+}
+
+.receiptRows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgb(0 0 0 / 0.06);
+}
+
+.receiptRows dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+
+.receiptRows dd {
+  margin: 0;
+  font-family: var(--font-nunito, "Nunito", ui-sans-serif, system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-align: right;
+  color: var(--ink);
+}
+
+.receiptBtn {
+  margin-top: 0;
+}
+
+/* ─── Панель шага ─────────────────────────────────────────────── */
+
+.panelSide {
+  position: sticky;
+  top: 20px;
+}
+
+.panel {
+  background: rgb(255 255 255 / 0.85);
+  border: 1px solid rgb(255 255 255 / 0.8);
+  border-radius: 1.25rem;
+  padding: 24px;
+  backdrop-filter: blur(1.25rem);
+  box-shadow:
+    0 24px 60px -16px rgb(0 0 0 / 0.24),
+    0 4px 12px -4px rgb(0 0 0 / 0.08);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hwd-primary);
+  background: var(--hwd-primary-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 18%, transparent);
+}
+
+.ptitle {
+  margin: 8px 0 18px;
+  font-size: clamp(1.6rem, 2.2vw, 2rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* ─── Поля ────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.flabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 6px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.85rem;
+  border: 1.5px solid var(--hwd-primary-soft);
+  background: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: var(--font-nunito, "Nunito", ui-sans-serif, system-ui, sans-serif);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+
+.input::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.6;
+}
+
+.input:hover { border-color: color-mix(in srgb, var(--hwd-primary) 35%, transparent); }
+
+.input:focus {
+  border-color: var(--hwd-primary);
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+  background: #fff;
+}
+
+.inputHand {
+  resize: vertical;
+  min-height: 150px;
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 19px;
+  line-height: 28px;
+  background:
+    repeating-linear-gradient(transparent 0 27px, color-mix(in srgb, var(--hwd-primary) 16%, transparent) 27px 28px),
+    #fff;
+  background-attachment: local, local;
+}
+
+.counter {
+  align-self: flex-end;
+  margin-top: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  opacity: 0.7;
+  transition: color 0.2s;
+}
+
+.counterWarm {
+  color: var(--hwd-primary);
+  opacity: 1;
+}
+
+/* ─── Кнопки ──────────────────────────────────────────────────── */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 0.8rem 1.25rem;
+  border: 0;
+  border-radius: 1rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  font-family: var(--font-nunito, "Nunito", ui-sans-serif, system-ui, sans-serif);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, color 0.2s, background 0.2s, opacity 0.2s;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.btnPrimary {
+  background: var(--hwd-primary);
+  color: #fff;
+  box-shadow: 0 12px 24px -10px var(--hwd-glow);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: var(--hwd-primary-deep);
+  box-shadow: 0 16px 30px -12px var(--hwd-glow);
+}
+
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnGhost {
+  margin-top: 10px;
+  background: rgb(255 255 255 / 0.6);
+  border: 1px solid rgb(255 255 255 / 0.85);
+  color: var(--ink);
+}
+
+.btnGhost:hover:not(:disabled) {
+  border-color: var(--hwd-primary);
+  color: var(--hwd-primary-deep);
+}
+
+.fnote {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.fbody {
+  margin: 4px 0 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* ─── Настройка оформления (бумага / печать / марка) ──────────── */
+
+.custGroup {
+  margin-bottom: 16px;
+}
+
+.custLabel {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.custRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgb(0 0 0 / 0.12);
+  cursor: pointer;
+  box-shadow:
+    inset 0 2px 4px rgb(255 255 255 / 0.6),
+    0 3px 8px -2px rgb(0 0 0 / 0.2);
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s, opacity 0.2s;
+}
+
+.swatch:hover:not(:disabled) { transform: scale(1.14); }
+
+.swatch:focus-visible {
+  outline: 2px solid var(--hwd-primary);
+  outline-offset: 3px;
+}
+
+.swatchOn {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4.5px var(--hwd-primary),
+    0 6px 14px -4px var(--hwd-glow);
+}
+
+.swatch:disabled,
+.chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.85);
+  background: rgb(255 255 255 / 0.6);
+  color: var(--ink-soft);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  font-family: var(--font-nunito, "Nunito", ui-sans-serif, system-ui, sans-serif);
+  cursor: pointer;
+  transition: border-color 0.16s, color 0.16s, background 0.16s, transform 0.16s, box-shadow 0.16s;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--hwd-primary);
+  color: var(--hwd-primary-deep);
+}
+
+.chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.chipOn {
+  border-color: var(--hwd-primary);
+  background: var(--hwd-primary-soft);
+  color: var(--hwd-primary-deep);
+  box-shadow: 0 0 0 3px var(--hwd-glow);
+}
+
+/* ─── Держи-и-запечатай (кнопка в панели) ─────────────────────── */
+
+.holdZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 4px;
+}
+
+.holdBtn {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  touch-action: none;
+}
+
+.holdBtn:focus-visible {
+  outline: 2px solid var(--hwd-primary);
+  outline-offset: 5px;
+}
+
+.holdBtn .holdRing {
+  position: absolute;
+  inset: 0;
+}
+
+.holdCore {
+  width: 66px;
+  height: 66px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  border-radius: 47% 53% 50% 50% / 52% 48% 53% 47%;
+  box-shadow:
+    0 8px 18px -6px color-mix(in srgb, var(--hwd-primary-deep) 35%, transparent),
+    inset 0 2px 5px rgb(255 255 255 / 0.35),
+    inset 0 -3px 6px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s;
+}
+
+.holdBtn:active .holdCore { transform: scale(0.94); }
+
+.holdCap {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+/* ─── Карточка адреса ─────────────────────────────────────────── */
+
+.addrCard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0.8rem 0.9rem;
+  margin-bottom: 14px;
+  border-radius: 0.85rem;
+  border: 2px dashed var(--hwd-primary-soft);
+  background: rgb(255 255 255 / 0.6);
+}
+
+.addrCardLine {
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 18px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.addrCardLine strong {
+  font-weight: 600;
+  color: var(--hwd-primary-deep);
+}
+
+/* ─── Screen-reader only ──────────────────────────────────────── */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Адаптив ─────────────────────────────────────────────────── */
+
+@media (max-width: 920px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .stage {
+    order: 1;
+    min-height: 660px;
+  }
+
+  .panelSide {
+    order: 2;
+    position: static;
+  }
+
+  .sheetScene,
+  .foldRig,
+  .stack {
+    left: calc(50% - var(--sheetW) / 2);
+  }
+
+  .envPos {
+    left: calc(50% - var(--envW) / 2);
+    bottom: 56px;
+  }
+
+  .route {
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stageHint i,
+  .waxHint,
+  .receiptStamp {
+    animation: none;
+  }
+
+  .routeActive {
+    transform: none;
+  }
+
+  .btn,
+  .chip,
+  .swatch,
+  .input {
+    transition: none;
+  }
+}

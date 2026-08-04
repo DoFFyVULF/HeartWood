@@ -1,0 +1,233 @@
+/* ═══════════════════════════════════════════════════════════
+   HEADER — Entrance
+   ═══════════════════════════════════════════════════════════ */
+.header {
+  transform: translateY(-100%);
+  opacity: 0;
+  transition:
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.headerVisible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRADIENT LINE — animated shimmer along the top border
+   ═══════════════════════════════════════════════════════════ */
+.gradientLine {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--hwd-primary) 20%,
+    var(--hwd-primary-deep) 40%,
+    #f472b6 60%,
+    var(--hwd-primary) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerLine 4s linear infinite;
+  opacity: 0.8;
+}
+
+@keyframes shimmerLine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BRAND — soft breathing glow
+   ═══════════════════════════════════════════════════════════ */
+.brand {
+  animation: brandFloat 6s ease-in-out infinite;
+}
+
+.brandGlow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--hwd-primary) 30%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+  pointer-events: none;
+}
+
+.brand:hover .brandGlow {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+@keyframes brandFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAV PILL — glass container + sliding indicator
+   ═══════════════════════════════════════════════════════════ */
+.navPill {
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.navIndicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 9999px;
+  background: var(--hwd-primary);
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--hwd-primary) 40%, transparent),
+    0 0 20px color-mix(in srgb, var(--hwd-primary) 20%, transparent);
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.4s ease;
+  z-index: 0;
+  /* Индикатор невидим, пока не привязан к активному пункту. */
+  opacity: 0;
+}
+
+/* Subtle pulse on the indicator */
+.navIndicator::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: indicatorPulse 3s ease-in-out infinite;
+}
+
+@keyframes indicatorPulse {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.08);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AVATARS — entrance stagger + heart burst
+   ═══════════════════════════════════════════════════════════ */
+.avatars {
+  position: relative;
+}
+
+.avatarFirst {
+  animation: avatarIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+.avatarSecond {
+  animation: avatarIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both;
+}
+
+@keyframes avatarIn {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Heart that pops on hover */
+.heartBurst {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  font-size: 0.75rem;
+  opacity: 0;
+  transform: scale(0) translateY(4px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+.avatars:hover .heartBurst {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  animation: heartFloat 1.5s ease-in-out 0.3s infinite;
+}
+
+@keyframes heartFloat {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.1) translateY(-3px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS — spin on hover (handled via Tailwind rotate-90)
+   + subtle idle wiggle
+   ═══════════════════════════════════════════════════════════ */
+.settings {
+  animation: settingsIdle 8s ease-in-out infinite;
+}
+
+@keyframes settingsIdle {
+  0%,
+  90%,
+  100% {
+    transform: rotate(0deg);
+  }
+  93% {
+    transform: rotate(8deg);
+  }
+  96% {
+    transform: rotate(-8deg);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REDUCED MOTION — respect user preferences
+   ═══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .header,
+  .brand,
+  .gradientLine,
+  .avatarFirst,
+  .avatarSecond,
+  .navIndicator::after,
+  .settings {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .header {
+    transform: none;
+    opacity: 1;
+  }
+}

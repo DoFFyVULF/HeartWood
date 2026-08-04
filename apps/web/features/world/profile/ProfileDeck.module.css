@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════════════════
+   PROFILE DECK — the 3D stage the cards live on
+   Слои: пятна света (1), частицы (2), карточки (3), свайп (5).
+   Глубина создаётся perspective на stage + rotateY на карточках.
+   ═══════════════════════════════════════════════════════════ */
+
+.deck {
+  position: relative;
+  z-index: 1; /* поверх локального фона профиля (ProfileScreen .localBg) */
+  width: 100%;
+}
+
+.stage {
+  /* Ширина карточки — общая для stage и слотов; её же использует ProfileCard. */
+  --card-w: min(72vw, 340px);
+  position: relative;
+  width: 100%;
+  height: clamp(420px, calc(var(--card-w) * 1.52), 560px);
+  perspective: 1600px;
+  perspective-origin: 50% 42%;
+}
+
+/* ─────────────────── COLOUR POOLS ─────────────────── */
+.glow {
+  position: absolute;
+  width: 44vw;
+  max-width: 430px;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+  animation: glowPulse 9s ease-in-out infinite;
+}
+
+.glowRight {
+  bottom: 2%;
+  right: -8%;
+  animation-delay: -3s;
+  animation-direction: reverse;
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: translateY(-14px) scale(1.06);
+  }
+}
+
+/* ───────────────────── PARTICLES ──────────────────── */
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  opacity: 0.75;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
+  animation: drift 9s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(7deg);
+  }
+}
+
+/* ───────────────── SWEEP ON SWAP ─────────────────── */
+.sweep {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sweepBand {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+}
+
+/* ─────────────── REDUCED MOTION ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .glow,
+  .particle {
+    animation: none;
+  }
+}

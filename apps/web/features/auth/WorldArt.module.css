@@ -1,0 +1,32 @@
+/* The living heart core: orbit rotation and sparkle twinkle.
+ * Note: transforms are animated on elements without a `transform` attribute,
+ * otherwise the CSS animation would override the attribute positioning. */
+
+.orbit {
+  animation: spin-slow 24s linear infinite;
+  transform-origin: 100px 100px;
+  transform-box: view-box;
+}
+
+.twinkle {
+  animation: twinkle 2.8s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

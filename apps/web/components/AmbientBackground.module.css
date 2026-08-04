@@ -1,0 +1,58 @@
+/* Ambient living world: cross-fading gradient layers, drifting blobs and
+ * floating particles. Duration/delay overrides are passed inline from JSX. */
+
+/* Full-screen gradient layers. They are stacked and cross-faded by opacity —
+ * the smoothest way to animate a background gradient between palettes. */
+.bgNeutral {
+  background: linear-gradient(150deg, #eef1fd 0%, #f8f6ff 48%, #fde8f1 100%);
+}
+
+.bgBoy {
+  background: linear-gradient(150deg, #cde3ff 0%, #eaf3ff 46%, #d9e7ff 100%);
+}
+
+.bgGirl {
+  background: linear-gradient(150deg, #ffd4e8 0%, #ffeaf2 46%, #fccbe3 100%);
+}
+
+.blob {
+  position: absolute;
+  width: 30rem;
+  height: 30rem;
+  border-radius: 9999px;
+  filter: blur(72px);
+  opacity: 0.55;
+  background: radial-gradient(circle at 35% 35%, var(--hwd-glow), transparent 70%);
+  animation: drift 30s ease-in-out infinite;
+  transition: background 0.8s ease;
+}
+
+.particle {
+  position: absolute;
+  line-height: 1;
+  user-select: none;
+  opacity: 0.8;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.1));
+  animation: particle-float 7s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(36px, -44px) scale(1.1);
+  }
+  66% {
+    transform: translate(-28px, 24px) scale(0.94);
+  }
+}
+
+@keyframes particle-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(8deg);
+  }
+}

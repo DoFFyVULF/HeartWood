@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+ * Design tokens — the auth palette.
+ *
+ * Everything that should re-tint with the chosen gender reads from these CSS
+ * custom properties, so switching gender is a single `data-gender` attribute
+ * swap on the auth root element. Component-specific styles live in their own
+ * CSS Modules next to the component; this file is global only.
+ * ------------------------------------------------------------------------- */
+:root {
+  --hwd-primary: #a78bfa; /* violet — neutral, before a gender is picked */
+  --hwd-primary-deep: #8b5cf6;
+  --hwd-primary-soft: #ede9fe;
+  --hwd-glow: rgba(167, 139, 250, 0.42);
+  --hwd-ink: #4b4a75;
+  --hwd-ink-soft: #7b7aa0;
+}
+
+[data-gender="boy"] {
+  --hwd-primary: #3b82f6; /* soft sky */
+  --hwd-primary-deep: #2563eb;
+  --hwd-primary-soft: #dbeafe;
+  --hwd-glow: rgba(59, 130, 246, 0.4);
+  --hwd-ink: #16335a;
+  --hwd-ink-soft: #54708f;
+}
+
+[data-gender="girl"] {
+  --hwd-primary: #ec4899; /* soft rose */
+  --hwd-primary-deep: #db2777;
+  --hwd-primary-soft: #fce7f3;
+  --hwd-glow: rgba(236, 72, 153, 0.4);
+  --hwd-ink: #5a1f3d;
+  --hwd-ink-soft: #a15f84;
+}
+
+::selection {
+  background: var(--hwd-primary-soft);
+  color: var(--hwd-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

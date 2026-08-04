@@ -1,0 +1,17 @@
+/* Paint-splash ripple triggered on gender select. It grows from the clicked
+ * card and fades out, tinting the world with the chosen palette. */
+
+.splash {
+  animation: splash 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes splash {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.5;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(22);
+    opacity: 0;
+  }
+}

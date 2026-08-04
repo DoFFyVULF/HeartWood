@@ -1,0 +1,735 @@
+/* ────────────────────────────────────────────────────────────────
+   Почта в шапке WorldShell: кнопка с бейджем непрочитанных открывает
+   полноэкранный оверлей, где по центру стоит большой интерактивный
+   конверт. Механика (клапан, письмо, печать, тайпинг, брызги) взята
+   из «конверта v2» и перекрашена с тёмного винного на светлое стекло
+   приложения: фон AmbientBackground, фиолетовые токены --hwd-*, Caveat.
+   ──────────────────────────────────────────────────────────────── */
+
+/* ── Бейдж непрочитанных на кнопке ── */
+.buttonBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  z-index: 2;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: var(--hwd-primary);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.18);
+  animation: badgePulse 2.2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--hwd-glow); }
+  50%      { box-shadow: 0 0 0 9px transparent; }
+}
+
+/* ── Оверлей на весь экран ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+  background: rgb(40 30 70 / 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.panel {
+  /* margin: auto — центрирует, если панель ниже экрана; контент сжат так,
+     чтобы на ноутбучном viewport (650–800px) панель помещалась целиком
+     и оставалось свободное место для центрирования. */
+  margin: auto;
+  width: min(30rem, 100%);
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  border-radius: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 0.85);
+  background: rgb(255 255 255 / 0.88);
+  box-shadow:
+    0 40px 90px -30px rgb(30 20 60 / 0.5),
+    inset 0 1px 0 #fff;
+  padding: 0.85rem 1.1rem 0.7rem;
+}
+
+/* ── Шапка оверлея ── */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.headTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.0625rem;
+  font-weight: 900;
+  color: var(--hwd-ink);
+}
+
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.countPill {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--hwd-primary-deep);
+  background: color-mix(in srgb, var(--hwd-primary) 12%, transparent);
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.closeBtn {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: none;
+  background: rgb(255 255 255 / 0.8);
+  color: var(--hwd-ink-soft);
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.closeBtn:hover {
+  background: #fff;
+  color: var(--hwd-ink);
+  transform: rotate(90deg);
+}
+
+/* ── Сцена: конверт по центру ── */
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0 0.25rem;
+}
+
+/* Кликабельная зона конверта; внутренний padding сверху — это запас,
+   куда поднимается письмо и откидывается клапан (как в «конверте v2»).
+   Величина связана с подъёмом письма (−56px) и шапкой панели, чтобы
+   поднятое письмо не перекрывало заголовок. */
+.envHit {
+  position: relative;
+  padding: 96px 12px 6px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 24px;
+  outline: none;
+}
+
+.envHit:focus-visible {
+  outline: 2px solid var(--hwd-primary);
+  outline-offset: 8px;
+}
+
+.env {
+  --pb: color-mix(in srgb, var(--hwd-primary) 18%, #fff);
+  --pd: color-mix(in srgb, var(--hwd-primary-deep) 26%, #fff);
+  position: relative;
+  width: min(256px, 62vw);
+  aspect-ratio: 370 / 250;
+  perspective: 1100px;
+}
+
+.envBody {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--pb), var(--pd));
+  box-shadow:
+    0 26px 44px -20px rgb(50 30 90 / 0.4),
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 0 0 1px rgb(120 90 170 / 0.12);
+}
+
+.envHeart {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-size: 92px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--hwd-primary) 9%, transparent);
+}
+
+/* ── Письмо: поднимается из кармашка ──
+   pointer-events включается динамически из TSX (только когда письмо
+   поднято), чтобы опущенное письмо не перехватывало клики конверта. */
+.letter {
+  position: absolute;
+  left: 8%;
+  bottom: 12px;
+  width: 84%;
+  z-index: 3;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.letterPaper {
+  background: #fffefb;
+  border-radius: 6px 6px 0 0;
+  padding: 12px 16px 16px;
+  box-shadow:
+    0 -10px 26px -10px rgb(40 25 70 / 0.35),
+    inset 0 0 0 1px rgb(120 80 170 / 0.08);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s;
+}
+
+.letter:hover .letterPaper {
+  transform: translateY(-4px);
+  box-shadow:
+    0 -4px 30px -8px rgb(40 25 70 / 0.4),
+    inset 0 0 0 1px rgb(120 80 170 / 0.08);
+}
+
+.letterHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.letterDate {
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 16px;
+  color: var(--hwd-ink-soft);
+}
+
+.letterStamp {
+  font-size: 19px;
+  line-height: 1;
+  background: linear-gradient(150deg, var(--hwd-primary-soft), #fff);
+  padding: 5px 6px;
+  border: 3px dotted #fffdf4;
+  border-radius: 2px;
+  transform: rotate(4deg);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 0.12);
+}
+
+.letterText {
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 28px;
+  color: var(--hwd-ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 96px;
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 17px;
+  background: var(--hwd-primary);
+  margin-left: 2px;
+  vertical-align: -3px;
+  animation: blink 1s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ── Кармашек конверта ── */
+.pocket {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.foldL,
+.foldR,
+.foldB {
+  position: absolute;
+  inset: 0;
+}
+
+.foldL {
+  clip-path: polygon(0 0, 0 100%, 54% 50%);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--pd) 86%, var(--hwd-primary-deep) 14%),
+    color-mix(in srgb, var(--pb) 88%, #fff 12%)
+  );
+  filter: drop-shadow(2px 0 3px rgb(60 40 110 / 0.16));
+}
+
+.foldR {
+  clip-path: polygon(100% 0, 100% 100%, 46% 50%);
+  background: linear-gradient(
+    -100deg,
+    color-mix(in srgb, var(--pd) 86%, var(--hwd-primary-deep) 14%),
+    color-mix(in srgb, var(--pb) 88%, #fff 12%)
+  );
+  filter: drop-shadow(-2px 0 3px rgb(60 40 110 / 0.16));
+}
+
+.foldB {
+  clip-path: polygon(0 100%, 50% 42%, 100% 100%);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--pb) 90%, #fff 10%),
+    color-mix(in srgb, var(--pd) 88%, var(--hwd-primary-deep) 12%)
+  );
+  filter: drop-shadow(0 -2px 3px rgb(60 40 110 / 0.16));
+}
+
+.addr {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 17px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.addrLine {
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--hwd-ink);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addrFrom {
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.micro {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--hwd-primary-deep) 42%, transparent);
+  white-space: nowrap;
+}
+
+/* ── Клапан (3D) ── */
+.flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56%;
+  z-index: 50;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  filter: drop-shadow(0 8px 12px rgb(60 40 110 / 0.22));
+}
+
+.flapFace,
+.flapBack {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  backface-visibility: hidden;
+}
+
+.flapFace {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--pb) 92%, #fff 8%) 0%,
+    var(--pd) 94%
+  );
+}
+
+.flapBack {
+  transform: rotateX(180deg);
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--pd) 80%, var(--hwd-primary-deep) 20%) 0%,
+    color-mix(in srgb, var(--pd) 94%, #fff 6%) 100%
+  );
+}
+
+/* Восковая печать на кончике клапана */
+.seal {
+  position: absolute;
+  left: 50%;
+  bottom: -22px;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  border-radius: 46% 54% 52% 48% / 50% 46% 54% 50%;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--hwd-primary) 60%, #fff),
+    var(--hwd-primary-deep)
+  );
+  box-shadow:
+    0 6px 14px -4px color-mix(in srgb, var(--hwd-primary-deep) 45%, transparent),
+    inset 0 2px 5px rgb(255 255 255 / 0.45),
+    inset 0 -3px 6px rgb(0 0 0 / 0.22);
+  backface-visibility: hidden;
+}
+
+.seal::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: inherit;
+  border: 1.5px solid rgb(255 255 255 / 0.3);
+}
+
+/* Брызги в момент вскрытия */
+.burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.burstP {
+  position: absolute;
+  font-size: 15px;
+  will-change: transform, opacity;
+}
+
+/* ── Статус и действия под конвертом ── */
+.statusLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.6rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hwd-ink-soft);
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.6);
+}
+
+.statusLine i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hwd-primary);
+  box-shadow: 0 0 10px var(--hwd-glow);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.statusLine[data-open="true"] i {
+  background: var(--hwd-primary-deep);
+  box-shadow: 0 0 12px var(--hwd-primary-deep);
+}
+
+.hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0.3rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--hwd-ink-soft);
+}
+
+.hint i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--hwd-primary);
+  animation: hintPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.7); opacity: 0.5; }
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.3rem;
+}
+
+.readBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(150deg, var(--hwd-primary), var(--hwd-primary-deep));
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -10px var(--hwd-glow);
+  transition:
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s;
+}
+
+.readBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px -10px var(--hwd-glow);
+}
+
+.readBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+/* ── Список писем ── */
+.divider {
+  height: 1px;
+  margin: 0.7rem 0 0.55rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--hwd-primary) 30%, transparent),
+    transparent
+  );
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.28rem 0.55rem;
+  border-radius: 0.75rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.listItem:hover {
+  background: rgb(255 255 255 / 0.75);
+}
+
+.listItemActive {
+  background: color-mix(in srgb, var(--hwd-primary) 10%, #fff);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--hwd-primary) 35%, transparent);
+}
+
+.listEmoji {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--hwd-primary-soft);
+  font-size: 0.875rem;
+}
+
+.listInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.listSubject {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--hwd-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listDate {
+  font-size: 0.6875rem;
+  color: var(--hwd-ink-soft);
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--hwd-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hwd-primary) 22%, transparent);
+}
+
+.readCheck {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--hwd-primary);
+}
+
+/* ── Чтение письма целиком ── */
+.readerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(40 30 70 / 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.readerCard {
+  position: relative;
+  width: min(27rem, 100%);
+  max-height: min(34rem, 88dvh);
+  overflow: auto;
+  border-radius: 1.25rem;
+  background: linear-gradient(170deg, #fffefb, #fdf7f0);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  box-shadow: 0 30px 70px -20px rgb(30 20 60 / 0.5);
+  padding: 1.5rem;
+}
+
+.readerClose {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: none;
+  background: rgb(255 255 255 / 0.8);
+  color: var(--hwd-ink-soft);
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.readerClose:hover {
+  background: #fff;
+  color: var(--hwd-ink);
+  transform: rotate(90deg);
+}
+
+.readerHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-right: 2.5rem;
+}
+
+.readerEmoji {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--hwd-primary-soft);
+  border: 2px solid #fff;
+  font-size: 1.4rem;
+  box-shadow: 0 8px 16px -8px rgb(30 20 60 / 0.35);
+}
+
+.readerTitle {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: var(--hwd-ink);
+  line-height: 1.2;
+}
+
+.readerMeta {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--hwd-ink-soft);
+}
+
+.readerBody {
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed color-mix(in srgb, var(--hwd-primary) 25%, transparent);
+}
+
+.readerGreeting {
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--hwd-primary-deep);
+  margin: 0 0 0.5rem;
+}
+
+.readerText {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--hwd-ink);
+  white-space: pre-line;
+}
+
+.readerSign {
+  margin: 1rem 0 0;
+  font-family: var(--font-caveat, "Caveat", "Segoe Script", cursive);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--hwd-ink);
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buttonBadge,
+  .caret,
+  .hint i {
+    animation: none;
+  }
+}

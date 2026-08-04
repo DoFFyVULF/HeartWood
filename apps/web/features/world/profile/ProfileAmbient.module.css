@@ -1,0 +1,80 @@
+/* ═══════════════════════════════════════════════════════════
+   PROFILE AMBIENT — локальный фон страницы профиля
+   Те же градиентные слои, что у AmbientBackground мира, но они
+   переключаются по полу ФОКУСНОЙ КАРТОЧКИ (локальный data-gender),
+   а не по глобальному полу пользователя. Поэтому клик по карточке
+   перекрашивает ВСЮ страницу профиля, а хедер, вкладки и другие
+   страницы остаются на глобальном цвете.
+   ═══════════════════════════════════════════════════════════ */
+
+.bg {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  top: -80px;
+  bottom: -240px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Градиентные слои складываются и переключаются через opacity —
+   плавная смена фона между палитрами, без рывков. */
+.layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1000ms ease-in-out;
+}
+
+.layerVisible {
+  opacity: 1;
+}
+
+/* Те же три палитры, что на экране регистрации и в AmbientBackground. */
+.bgNeutral {
+  background: linear-gradient(150deg, #eef1fd 0%, #f8f6ff 48%, #fde8f1 100%);
+}
+
+.bgBoy {
+  background: linear-gradient(150deg, #cde3ff 0%, #eaf3ff 46%, #d9e7ff 100%);
+}
+
+.bgGirl {
+  background: linear-gradient(150deg, #ffd4e8 0%, #ffeaf2 46%, #fccbe3 100%);
+}
+
+/* Цветные пятна — подкрашиваются вместе с активной карточкой
+   через --hwd-glow (data-gender стоит на .screen выше этого слоя). */
+.blob {
+  position: absolute;
+  width: 30rem;
+  height: 30rem;
+  border-radius: 9999px;
+  filter: blur(72px);
+  opacity: 0.5;
+  background: radial-gradient(circle at 35% 35%, var(--hwd-glow), transparent 70%);
+  animation: drift 30s ease-in-out infinite;
+  transition: background 0.8s ease;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(36px, -44px) scale(1.1);
+  }
+  66% {
+    transform: translate(-28px, 24px) scale(0.94);
+  }
+}
+
+/* ─────────────── REDUCED MOTION ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .blob {
+    animation: none;
+  }
+}

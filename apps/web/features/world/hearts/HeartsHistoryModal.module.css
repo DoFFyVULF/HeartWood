@@ -1,0 +1,308 @@
+/* Модал «История сердечек» — личный счёт за 30 дней.
+   Карта глубины: 0 скрим, 1 панель. Гамма — токены темы (--hwd-*), панель
+   перекрашивается по data-gender ВЛАДЕЛЬЦА кошелька (не фокусной карточки). */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  isolation: isolate;
+}
+
+/* ── 0 · Скрим-подложка ─────────────────────────────────────── */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hwd-ink) 38%, transparent),
+    color-mix(in srgb, var(--hwd-ink) 56%, transparent)
+  );
+  backdrop-filter: blur(14px) saturate(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(110%);
+}
+
+.stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-height: min(86vh, 44rem);
+}
+
+/* ── 1 · Панель ─────────────────────────────────────────────── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 26rem);
+  max-height: min(86vh, 44rem);
+  border-radius: 1.6rem;
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.96),
+    rgb(255 255 255 / 0.86)
+  );
+  border: 1.5px solid color-mix(in srgb, var(--hwd-primary) 30%, transparent);
+  box-shadow:
+    0 32px 64px -28px rgb(30 27 60 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.95);
+  overflow: hidden;
+  outline: none;
+}
+
+.panel:focus-visible {
+  box-shadow:
+    0 0 0 4px var(--hwd-glow),
+    0 32px 64px -28px rgb(30 27 60 / 0.5);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.4rem 1.4rem 0.6rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hwd-primary-deep);
+}
+
+.title {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--hwd-ink);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--hwd-ink-soft);
+  background: rgb(255 255 255 / 0.6);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 22%, transparent);
+  transition: background 0.25s, color 0.25s, transform 0.25s;
+}
+
+.close:hover {
+  background: rgb(255 255 255 / 0.9);
+  color: var(--hwd-ink);
+  transform: rotate(90deg);
+}
+
+.close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.closeIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* ── Сводка ─────────────────────────────────────────────────── */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+  padding: 0.7rem 1.4rem 0.4rem;
+}
+
+.summaryCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.7rem 0.4rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--hwd-primary-soft) 35%, rgb(255 255 255 / 0.6));
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 22%, transparent);
+}
+
+.summaryEmoji {
+  font-size: 1rem;
+}
+
+.summaryNum {
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--hwd-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryLabel {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--hwd-ink-soft);
+}
+
+/* ── История ────────────────────────────────────────────────── */
+.list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0.5rem 0.6rem 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.dayGroup + .dayGroup {
+  margin-top: 0.9rem;
+}
+
+.dayLabel {
+  margin: 0 0 0.3rem;
+  padding: 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hwd-ink-soft);
+}
+
+.dayList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.9rem;
+  background: rgb(255 255 255 / 0.55);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 14%, transparent);
+}
+
+.rowEmoji {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.75rem;
+  font-size: 1.05rem;
+  background: var(--hwd-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 25%, transparent);
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.rowTitle {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--hwd-ink);
+}
+
+.rowLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--hwd-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowAmount {
+  flex: none;
+  font-size: 0.88rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rowEarned {
+  color: var(--hwd-primary-deep);
+}
+
+.rowSpent {
+  color: var(--hwd-ink-soft);
+}
+
+/* ── Пустая история ─────────────────────────────────────────── */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 2rem 1.5rem 1.5rem;
+  text-align: center;
+}
+
+.emptyEmoji {
+  font-size: 2.2rem;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.emptyTitle {
+  margin: 0.3rem 0 0;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--hwd-ink);
+}
+
+.emptySub {
+  margin: 0;
+  max-width: 20rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--hwd-ink-soft);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.08);
+  }
+}
+
+/* ── Подпись ────────────────────────────────────────────────── */
+.footnote {
+  margin: 0;
+  padding: 0.7rem 1.4rem 1.1rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--hwd-ink-soft);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .emptyEmoji {
+    animation: none;
+  }
+}

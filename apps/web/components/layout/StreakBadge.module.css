@@ -1,0 +1,313 @@
+/* ═══════════════════════════════════════════════════════════
+   STREAK BADGE — интерактивный бейдж серии
+   Кнопка (🔥 + счётчик с count-up) + поповер-календарь последних
+   дней. Логика в StreakBadge.tsx; здесь только вид.
+   ═══════════════════════════════════════════════════════════ */
+
+.root {
+  position: relative;
+}
+
+/* ── Кнопка-пилюля ───────────────────────────────────────── */
+.streak {
+  position: relative;
+  overflow: visible;
+}
+
+/* Тёплое свечение позади пилюли */
+.streak::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at 30% 50%,
+    rgba(251, 146, 60, 0.15) 0%,
+    transparent 70%
+  );
+  animation: streakGlow 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes streakGlow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.ember {
+  display: inline-block;
+  font-size: 1rem;
+  animation: ember 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(251, 146, 60, 0.6));
+}
+
+@keyframes ember {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 4px rgba(251, 146, 60, 0.6));
+  }
+  25% {
+    transform: scale(1.15) rotate(-3deg);
+    filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.9));
+  }
+  50% {
+    transform: scale(0.95) rotate(2deg);
+    filter: drop-shadow(0 0 3px rgba(251, 146, 60, 0.4));
+  }
+  75% {
+    transform: scale(1.1) rotate(-1deg);
+    filter: drop-shadow(0 0 6px rgba(251, 146, 60, 0.7));
+  }
+}
+
+.streakCount {
+  font-size: 0.875rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums; /* цифры не прыгают по ширине при count-up */
+  color: var(--hwd-ink);
+  animation: countPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Финальный «треск» цифры, когда счётчик доехал до значения */
+.streakDone .streakCount {
+  animation: countFinish 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes countPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes countFinish {
+  0% {
+    transform: scale(1);
+    color: var(--hwd-ink);
+  }
+  40% {
+    transform: scale(1.35);
+    color: #f97316;
+  }
+  100% {
+    transform: scale(1);
+    color: var(--hwd-ink);
+  }
+}
+
+/* ── Поповер ─────────────────────────────────────────────── */
+.popover {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  z-index: 50;
+  width: 280px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 24px 48px -20px rgba(30, 27, 60, 0.3),
+    0 4px 16px -8px rgba(30, 27, 60, 0.12);
+  backdrop-filter: blur(20px);
+  transform-origin: top right;
+}
+
+/* Стрелка-«клюв» к кнопке */
+.popover::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 20px;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-left: 1px solid rgba(255, 255, 255, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.95);
+  transform: rotate(45deg);
+}
+
+.popHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.popFlame {
+  font-size: 1.4rem;
+  filter: drop-shadow(0 0 6px rgba(251, 146, 60, 0.5));
+}
+
+.popTitle {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--hwd-ink);
+}
+
+.popSub {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--hwd-ink-soft);
+}
+
+.popDivider {
+  height: 1px;
+  margin: 14px 0;
+  background: linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.28), transparent);
+}
+
+/* Сетка последних дней — старые слева-сверху, сегодня в углу.
+   Под заголовком с днями недели, чтобы каждый квадрат был читаем. */
+.calendarHead {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.calendarHeadCell {
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hwd-ink-soft);
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.cell {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: rgba(30, 27, 60, 0.07);
+}
+
+.cellDone {
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
+}
+
+/* Старые недели приглушены — текущая неделя выделена ярче */
+.cellPast {
+  opacity: 0.45;
+}
+
+.cellToday {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 3px var(--hwd-primary),
+    0 4px 12px rgba(249, 115, 22, 0.55);
+}
+
+/* Число даты в ячейке «сегодня» — якорь, привязывающий сетку к календарю */
+.todayNum {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* Легенда: расшифровка квадратов и кольца «сегодня» */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 10px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--hwd-ink-soft);
+}
+
+.legendSwatch {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+/* Образец «день серии» — повторяет заливку cellDone */
+.legendSwatchDone {
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+  box-shadow: 0 1px 3px rgba(249, 115, 22, 0.35);
+}
+
+/* Образец «сегодня» — повторяет кольцо cellToday */
+.legendSwatchToday {
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+  outline: 2px solid #fff;
+  outline-offset: -1px;
+  box-shadow: 0 0 0 2px var(--hwd-primary);
+}
+
+/* Подпись под сеткой: что означают квадраты */
+.calCaption {
+  margin-top: 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--hwd-ink-soft);
+}
+
+.popFooter {
+  margin-top: 14px;
+}
+
+.popMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--hwd-ink-soft);
+}
+
+.progressTrack {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(30, 27, 60, 0.08);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fbbf24, #f97316);
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─────────────── REDUCED MOTION ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ember,
+  .streakCount,
+  .streakDone .streakCount,
+  .streak::before {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
