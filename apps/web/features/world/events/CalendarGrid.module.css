@@ -1,0 +1,206 @@
+/* Месяц-сетка календаря.
+   Стеклянная панель в том же языке, что hero и summary: чистая поверхность,
+   волосяная рамка в цвет акцента, одна мягкая тень. Ячейки — кнопки с
+   мягким hover и фокус-кольцом; «сегодня» — кольцо акцента, выбранный день —
+   градиентная заливка. Вся гамма — из токенов темы (--hwd-*). */
+
+.card {
+  position: relative;
+  border-radius: 1.35rem;
+  padding: 1.1rem 1rem 1rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.6));
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 24%, rgb(255 255 255 / 0.8));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 14px 34px -22px rgb(30 27 60 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.85);
+}
+
+/* ── Заголовок месяца + навигация ── */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0 0.1rem 0.6rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--hwd-ink);
+  white-space: nowrap;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.navBtn {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--hwd-ink-soft);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 18%, transparent);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+.navBtn:hover {
+  background: var(--hwd-primary-soft);
+  color: var(--hwd-primary-deep);
+}
+
+.navBtn:active {
+  transform: scale(0.94);
+}
+
+.navBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+.navIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.todayBtn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--hwd-primary-deep);
+  background: color-mix(in srgb, var(--hwd-primary-soft) 55%, #fff);
+  border: 1px solid color-mix(in srgb, var(--hwd-primary) 22%, transparent);
+  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
+}
+
+.todayBtn:hover {
+  background: var(--hwd-primary-soft);
+}
+
+.todayBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+/* ── Таблица: шапка недели + ячейки ── */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.weekDay {
+  padding: 0.4rem 0;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hwd-ink-soft);
+  text-align: center;
+}
+
+.cell {
+  padding: 0.12rem;
+  height: clamp(2.6rem, 5.5vw, 3.2rem);
+}
+
+.cellBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.7rem;
+  color: var(--hwd-ink);
+  background: transparent;
+  border: none;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.cellBtn:hover {
+  background: color-mix(in srgb, var(--hwd-primary-soft) 45%, transparent);
+}
+
+.cellBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--hwd-glow);
+}
+
+/* Дни соседних месяцев — приглушены */
+.cellOut {
+  color: color-mix(in srgb, var(--hwd-ink-soft) 45%, transparent);
+}
+
+/* «Сегодня» — кольцо акцента */
+.cellToday {
+  box-shadow:
+    0 0 0 1.5px var(--hwd-primary),
+    0 6px 16px -8px var(--hwd-glow);
+}
+
+/* Выбранный день — градиентная заливка */
+.cellSelected {
+  background: linear-gradient(135deg, var(--hwd-primary), var(--hwd-primary-deep));
+  color: #fff;
+  box-shadow: 0 8px 18px -8px var(--hwd-glow);
+}
+
+.cellSelected:hover {
+  background: linear-gradient(135deg, var(--hwd-primary), var(--hwd-primary-deep));
+}
+
+.dayNum {
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Маркеры событий — мини-иконки типов */
+.marks {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 0.55rem;
+  color: var(--hwd-primary-deep);
+}
+
+.mark {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.markMore {
+  font-size: 0.5rem;
+  font-weight: 800;
+  color: var(--hwd-ink-soft);
+  line-height: 1;
+}
+
+/* На градиенте выбранного дня маркеры наследуют белый */
+.cellSelected .marks,
+.cellSelected .markMore {
+  color: #fff;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .navBtn:active {
+    transform: none;
+  }
+}

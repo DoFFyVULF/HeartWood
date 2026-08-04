@@ -3,6 +3,9 @@
 // Размер задаётся снаружи (className). Стиль повторяет иконки целей и
 // купонов: контур, без эмодзи.
 
+import type { ComponentType } from "react";
+import type { EventKind } from "@/lib/data/events";
+
 interface IconProps {
   className?: string;
 }
@@ -131,3 +134,46 @@ export function CheckIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Стрелка влево — навигация по месяцам. */
+export function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m15 5-7 7 7 7" />
+    </svg>
+  );
+}
+
+/** Стрелка вправо — навигация по месяцам. */
+export function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m9 5 7 7-7 7" />
+    </svg>
+  );
+}
+
+/** Иконка типа события — общая для сетки, панели дня и сводки. */
+export const KIND_ICON: Record<EventKind, ComponentType<IconProps>> = {
+  date: TicketIcon,
+  anniversary: HeartIcon,
+  milestone: StarIcon,
+};

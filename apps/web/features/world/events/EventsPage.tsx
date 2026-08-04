@@ -2,99 +2,65 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
 import { findPersonByGender } from "@/features/world/profile/couple";
 import {
   type CoupleEvent,
-  type EventKind,
-  daysUntil,
-  nextDate,
-  pluralRu,
-  startOfDay,
-  yearsSince,
   countdownLabel,
+  daysUntil,
+  formatDayNumber,
+  formatFullDate,
+  formatMonthShort,
+  toISODate,
+  upcomingOccurrences,
 } from "@/lib/data/events";
 import { useEvents, toAuthorId, type NewEventInput } from "./useEvents";
 import { EventComposer } from "./EventComposer";
-import { CalendarIcon, HeartIcon, PlusIcon, StarIcon, TicketIcon, TrashIcon } from "./icons";
+import { CalendarGrid } from "./CalendarGrid";
+import { DayPanel } from "./DayPanel";
+import { CalendarIcon, HeartIcon, PlusIcon, StarIcon, TicketIcon } from "./icons";
 import styles from "./EventsPage.module.css";
 
-// Стаггер на первичный вход — события всплывают каскадом снизу.
-const gridVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 26, scale: 0.96 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: "spring", bounce: 0.32, duration: 0.6 } as const,
-  },
-};
-
 /** Иконка типа события. */
-const KIND_ICON: Record<EventKind, (props: { className?: string }) => React.ReactElement> = {
+const KIND_ICON: Record<string, (props: { className?: string }) => React.ReactElement> = {
   date: TicketIcon,
   anniversary: HeartIcon,
   milestone: StarIcon,
 };
 
-/** Русские имена участников — для подписей «Зовёт Дима» / «Добавила Аня». */
-const PERSON_NAME: Record<string, string> = {
-  dima: "Дима",
-  anya: "Аня",
-};
-
-/** День для календарного квадратика: «15». */
-function dayNum(d: Date): string {
-  return d.toLocaleDateString("ru-RU", { day: "numeric" });
-}
-
-/** Месяц для календарного квадратика: «авг.». */
-function monthShort(d: Date): string {
-  return d.toLocaleDateString("ru-RU", { month: "short" }).replace(/\.$/, "");
-}
-
-/** Полная дата: «15 августа 2026 г.» */
-function fullDate(d: Date): string {
-  return d.toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 /**
- * Страница «Календарь» — самый социальный хаб пары.
+ * Страница «Календарь» — месяц-сетка пары.
  *
- * Здесь собраны три взгляда на даты: герой «следующее событие» с обратным
- * отсчётом, раздел предстоящих свиданий, годовщины (повторяются каждый год)
- * и важные даты-вехи из истории. Календарь живой: «сегодня» вычисляется на
- * клиенте, поэтому отсчёт дней всегда актуален, а добавленные даты сразу
- * попадают в нужный раздел и считаются в сводке.
+ * В центре — живой месяц: ячейки-дни с маркерами событий, «сегодня» и
+ * выбранный день. Справа — боковая панель: что в выбранный день, ближайшие
+ * свидания и годовщины, важные даты-вехи. Герой «следующее событие» с
+ * обратным отсчётом — как и раньше, сверху. Календарь живой: «сегодня»
+ * вычисляется на клиенте, добавленные даты сразу попадают в сетку и панель.
  *
  * Карточки — «стекло»: чистые поверхности, волосяные рамки, одна мягкая
  * тень. Вся гамма — из токенов темы (--hwd-*), перекрашивается по гендеру.
  */
 export function EventsPage() {
-  const reduced = useReducedMotion();
   const { gender } = useGender();
 
   const me = findPersonByGender(gender);
   const { events, create, remove } = useEvents();
 
   const [today, setToday] = useState<Date | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   // «Сегодня» известно только на клиенте. До первого кадра используем
   // фиксированную дату (SSR-гидрация совпадает), затем — реальную.
+  // Выбранный день тоже живёт только на клиенте: пока нет реальной даты,
+  // панель дня рисует пустое состояние, затем авто-выбирает «сегодня».
   useEffect(() => {
-    const t = requestAnimationFrame(() => setToday(new Date()));
+    const t = requestAnimationFrame(() => {
+      const d = new Date();
+      setToday(d);
+      setSelected((s) => s ?? toISODate(d));
+    });
     return () => cancelAnimationFrame(t);
   }, []);
 
@@ -102,38 +68,15 @@ export function EventsPage() {
   // useMemo — чтобы ссылка на Date была стабильной между рендерами.
   const now = useMemo(() => today ?? new Date(2026, 7, 4), [today]);
 
-  // Событие с ближайшей датой — герой «следующее».
-  const nextUp = useMemo(() => {
-    return events
-      .filter((e) => e.kind !== "milestone")
-      .map((e) => ({ e, next: nextDate(e, now) }))
-      .filter(({ next }) => next >= startOfDay(now))
-      .sort((a, b) => a.next.getTime() - b.next.getTime())[0] ?? null;
-  }, [events, now]);
+  // Ближайшие вхождения (свидания + годовщины) — общий feed для героя и
+  // панели «Ближайшее». Первое — «следующее событие».
+  const upcoming = useMemo(() => upcomingOccurrences(events, now), [events, now]);
+  const nextUp = upcoming[0] ?? null;
 
-  // Разделы: свидания впереди / годовщины / важные даты.
-  const sections = useMemo(() => {
-    const upcoming = events
-      .map((e) => ({ e, next: nextDate(e, now) }))
-      .filter(({ e, next }) => e.kind === "date" && next >= startOfDay(now))
-      .sort((a, b) => a.next.getTime() - b.next.getTime());
-
-    const anniversaries = events
-      .filter((e) => e.kind === "anniversary")
-      .map((e) => ({ e, next: nextDate(e, now) }))
-      .sort((a, b) => a.next.getTime() - b.next.getTime());
-
-    const milestones = events
-      .filter((e) => e.kind === "milestone")
-      .map((e) => ({ e, next: parseLocalDate(e.date) }))
-      .sort((a, b) => b.next.getTime() - a.next.getTime());
-
-    return { upcoming, anniversaries, milestones };
-  }, [events, now]);
-
-  const upcomingCount = sections.upcoming.length;
-  const anniversaryCount = sections.anniversaries.length;
-  const milestoneCount = sections.milestones.length;
+  // Сводка в шапке: свидания впереди / годовщины / важные даты.
+  const upcomingCount = upcoming.filter((o) => o.event.kind === "date").length;
+  const anniversaryCount = events.filter((e) => e.kind === "anniversary").length;
+  const milestoneCount = events.filter((e) => e.kind === "milestone").length;
 
   /** Добавляет событие и закрывает композер. */
   const handleCreate = useCallback(
@@ -155,6 +98,12 @@ export function EventsPage() {
     },
     [remove],
   );
+
+  /** Открыть композер на конкретный день (из панели дня или «сегодня»). */
+  const handleAddDate = useCallback((iso: string) => {
+    setSelected(iso);
+    setComposing(true);
+  }, []);
 
   return (
     <div className={styles.page}>
@@ -221,13 +170,13 @@ export function EventsPage() {
       </header>
 
       {/* Герой «следующее событие» */}
-      {nextUp && <NextHero event={nextUp.e} next={nextUp.next} now={now} />}
+      {nextUp && <NextHero event={nextUp.event} next={nextUp.date} now={now} />}
 
       {/* Кнопка новой даты */}
       <div className={styles.toolbar}>
         <button
           type="button"
-          onClick={() => setComposing(true)}
+          onClick={() => handleAddDate(selected ?? toISODate(now))}
           className={styles.addBtn}
           aria-label="Добавить дату"
         >
@@ -244,96 +193,23 @@ export function EventsPage() {
         </div>
       )}
 
-      {/* Свидания впереди */}
-      {sections.upcoming.length > 0 && (
-        <Section
-          title="Свидания впереди"
-          count={sections.upcoming.length}
-          plural={(n) => pluralRu(n, "свидание", "свидания", "свиданий")}
-        >
-          <motion.ul
-            className={styles.grid}
-            variants={gridVariants}
-            initial={reduced ? false : "hidden"}
-            animate="show"
-            aria-label="Предстоящие свидания"
-          >
-            {sections.upcoming.map(({ e, next }) => (
-              <motion.li key={e.id} layout variants={itemVariants} className={styles.gridItem}>
-                <EventCard
-                  event={e}
-                  next={next}
-                  now={now}
-                  onRemove={() => handleRemove(e)}
-                />
-              </motion.li>
-            ))}
-          </motion.ul>
-        </Section>
-      )}
-
-      {/* Годовщины */}
-      {sections.anniversaries.length > 0 && (
-        <Section
-          title="Годовщины"
-          count={sections.anniversaries.length}
-          plural={(n) => pluralRu(n, "годовщина", "годовщины", "годовщин")}
-        >
-          <motion.ul
-            className={styles.grid}
-            variants={gridVariants}
-            initial={reduced ? false : "hidden"}
-            animate="show"
-            aria-label="Годовщины пары"
-          >
-            {sections.anniversaries.map(({ e, next }) => (
-              <motion.li key={e.id} layout variants={itemVariants} className={styles.gridItem}>
-                <EventCard
-                  event={e}
-                  next={next}
-                  now={now}
-                  onRemove={() => handleRemove(e)}
-                />
-              </motion.li>
-            ))}
-          </motion.ul>
-        </Section>
-      )}
-
-      {/* Важные даты */}
-      {sections.milestones.length > 0 && (
-        <Section
-          title="Важные даты"
-          count={sections.milestones.length}
-          plural={(n) => pluralRu(n, "дата", "даты", "дат")}
-        >
-          <motion.ul
-            className={styles.grid}
-            variants={gridVariants}
-            initial={reduced ? false : "hidden"}
-            animate="show"
-            aria-label="Важные даты пары"
-          >
-            {sections.milestones.map(({ e, next }) => (
-              <motion.li key={e.id} layout variants={itemVariants} className={styles.gridItem}>
-                <EventCard
-                  event={e}
-                  next={next}
-                  now={now}
-                  milestone
-                  onRemove={() => handleRemove(e)}
-                />
-              </motion.li>
-            ))}
-          </motion.ul>
-        </Section>
-      )}
-
-      {events.length === 0 && (
-        <p className={styles.footnote}>
-          Пока календарь пуст — добавьте первую важную дату
-        </p>
-      )}
+      {/* Месяц-сетка + боковая панель */}
+      <div className={styles.calendarLayout}>
+        <CalendarGrid
+          events={events}
+          now={now}
+          selected={selected}
+          onSelect={setSelected}
+        />
+        <DayPanel
+          events={events}
+          now={now}
+          selected={selected}
+          upcoming={upcoming}
+          onAddDate={handleAddDate}
+          onRemove={handleRemove}
+        />
+      </div>
 
       <p className={styles.footnote}>
         Годовщины повторяются каждый год — календарь всегда помнит о важном
@@ -341,34 +217,13 @@ export function EventsPage() {
 
       {/* Добавление даты */}
       {composing && (
-        <EventComposer onCreate={handleCreate} onClose={() => setComposing(false)} />
+        <EventComposer
+          onCreate={handleCreate}
+          onClose={() => setComposing(false)}
+          initialDate={selected ?? undefined}
+        />
       )}
     </div>
-  );
-}
-
-/** Раздел с заголовком и счётчиком. */
-function Section({
-  title,
-  count,
-  plural,
-  children,
-}: {
-  title: string;
-  count: number;
-  plural: (n: number) => string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className={styles.section} aria-label={title}>
-      <h2 className={styles.sectionTitle}>
-        {title}
-        <span className={styles.sectionCount}>
-          {count} {plural(count)}
-        </span>
-      </h2>
-      {children}
-    </section>
   );
 }
 
@@ -398,10 +253,10 @@ function NextHero({
         {event.description && <p className={styles.heroDesc}>{event.description}</p>}
         <span className={styles.heroMeta}>
           <span className={styles.heroCalendarSquare} aria-hidden>
-            <strong className={styles.heroDay}>{dayNum(next)}</strong>
-            <small className={styles.heroMonth}>{monthShort(next)}</small>
+            <strong className={styles.heroDay}>{formatDayNumber(next)}</strong>
+            <small className={styles.heroMonth}>{formatMonthShort(next)}</small>
           </span>
-          <span className={styles.heroDate}>{fullDate(next)}</span>
+          <span className={styles.heroDate}>{formatFullDate(next)}</span>
         </span>
       </div>
 
@@ -417,79 +272,4 @@ function NextHero({
       </div>
     </div>
   );
-}
-
-/** Карточка события: квадратик даты, название, описание, подпись. */
-function EventCard({
-  event,
-  next,
-  now,
-  milestone = false,
-  onRemove,
-}: {
-  event: CoupleEvent;
-  next: Date;
-  now: Date;
-  milestone?: boolean;
-  onRemove: () => void;
-}) {
-  const Icon = KIND_ICON[event.kind] ?? CalendarIcon;
-  const days = milestone ? null : daysUntil(next, now);
-
-  // Подпись «кто»: для свиданий — кто зовёт, для созданных — кто добавил.
-  const who = event.kind === "date" && event.invitedBy
-    ? `Зовёт ${PERSON_NAME[event.invitedBy] ?? event.invitedBy}`
-    : event.createdBy
-      ? `Добавил${event.createdBy === "anya" ? "а" : ""} ${PERSON_NAME[event.createdBy] ?? event.createdBy}`
-      : null;
-
-  return (
-    <article
-      className={styles.card}
-      aria-label={`${event.title}, ${fullDate(next)}`}
-    >
-      {/* Квадратик даты */}
-      <span className={cn(styles.cardSquare, milestone && styles.cardSquareMilestone)} aria-hidden>
-        <strong className={styles.cardDay}>{dayNum(next)}</strong>
-        <small className={styles.cardMonth}>{monthShort(next)}</small>
-      </span>
-
-      <span className={styles.cardBody}>
-        <span className={styles.cardTop}>
-          <span className={styles.cardMedallion} aria-hidden>
-            <Icon className={styles.cardIcon} />
-          </span>
-          <span className={styles.cardBadge}>
-            {milestone
-              ? `${yearsSince(event.date, now)} ${pluralRu(yearsSince(event.date, now), "год", "года", "лет")} назад`
-              : countdownLabel(days!)}
-          </span>
-        </span>
-
-        <h3 className={styles.cardTitle}>{event.title}</h3>
-        {event.description && <p className={styles.cardDesc}>{event.description}</p>}
-
-        <span className={styles.cardFooter}>
-          <span className={styles.cardDate}>{fullDate(next)}</span>
-          {who && <span className={styles.cardWho}>{who}</span>}
-        </span>
-      </span>
-
-      {event.id.startsWith("evt-") && (
-        <button
-          type="button"
-          onClick={onRemove}
-          className={styles.cardTrash}
-          aria-label={`Удалить дату «${event.title}»`}
-        >
-          <TrashIcon className={styles.cardTrashIcon} />
-        </button>
-      )}
-    </article>
-  );
-}
-
-/** Полдень из ISO — для вех без смещения дня. */
-function parseLocalDate(iso: string): Date {
-  return new Date(`${iso}T12:00:00`);
 }

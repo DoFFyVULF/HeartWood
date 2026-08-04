@@ -19,6 +19,12 @@ export type EventKind = "date" | "anniversary" | "milestone";
 /** Кто добавил событие (для пользовательских) — id участника из coupleProfile. */
 export type AuthorId = "dima" | "anya";
 
+/** Русские имена участников — для подписей «Зовёт Дима» / «Добавила Аня». */
+export const AUTHOR_NAMES: Record<AuthorId, string> = {
+  dima: "Дима",
+  anya: "Аня",
+};
+
 export interface CoupleEvent {
   /** Стабильный id; у seeds — строки вида "seed-…". */
   id: string;
@@ -172,4 +178,141 @@ export function countdownLabel(days: number): string {
   if (days <= 0) return "сегодня";
   if (days === 1) return "завтра";
   return `через ${days} ${pluralRu(days, "день", "дня", "дней")}`;
+}
+
+/* ─── Сетка месяца и сводки (SSR-safe: «сейчас» приходит параметром) ───── */
+
+/** Дата → ISO (YYYY-MM-DD) — как хранит календарь. */
+export function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Один ли день (без времени) — сравнение по году/месяцу/числу, без DST-артефактов. */
+export function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/** Сколько дней в месяце (m — индекс 0..11). */
+export function daysInMonth(y: number, m: number): number {
+  return new Date(y, m + 1, 0).getDate();
+}
+
+/**
+ * Сетка календаря: 42 ячейки от Пн=0, включая хвосты соседних месяцев.
+ * Детерминирована по паре (y, m) — безопасна для SSR и гидрации.
+ */
+export function buildMonthGrid(y: number, m: number): Date[] {
+  const first = new Date(y, m, 1);
+  const offset = (first.getDay() + 6) % 7; // Пн = 0
+  return Array.from({ length: 42 }, (_, i) => new Date(y, m, 1 - offset + i));
+}
+
+/**
+ * События в просматриваемом месяце: день месяца → список событий.
+ * Вехи (milestone) на сетку не попадают — они живут в панели «Важные даты».
+ * Годовщины повторяются каждый год по месяцу/числу, поэтому показываются
+ * в любом году.
+ */
+export function occurrencesInMonth(
+  events: CoupleEvent[],
+  y: number,
+  m: number,
+): Map<number, CoupleEvent[]> {
+  const map = new Map<number, CoupleEvent[]>();
+  const dim = daysInMonth(y, m);
+  for (const ev of events) {
+    if (ev.kind === "milestone") continue;
+    const base = parseISO(ev.date);
+    const day = ev.recurring
+      ? base.getMonth() === m
+        ? Math.min(base.getDate(), dim)
+        : null
+      : base.getFullYear() === y && base.getMonth() === m
+        ? base.getDate()
+        : null;
+    if (day === null) continue;
+    const list = map.get(day) ?? [];
+    list.push(ev);
+    map.set(day, list);
+  }
+  return map;
+}
+
+/** События, попадающие на конкретный день (ISO). Для годовщин — N-я годовщина. */
+export function eventsOnDate(
+  events: CoupleEvent[],
+  iso: string,
+): Array<{ event: CoupleEvent; years?: number }> {
+  const sel = parseISO(iso);
+  const out: Array<{ event: CoupleEvent; years?: number }> = [];
+  for (const ev of events) {
+    const base = parseISO(ev.date);
+    if (ev.recurring) {
+      if (base.getMonth() === sel.getMonth() && base.getDate() === sel.getDate()) {
+        out.push({
+          event: ev,
+          years: Math.max(sel.getFullYear() - base.getFullYear(), 0),
+        });
+      }
+    } else if (ev.date === iso) {
+      out.push({ event: ev });
+    }
+  }
+  return out;
+}
+
+export interface UpcomingOccurrence {
+  event: CoupleEvent;
+  /** Дата следующего вхождения (для годовщин — в этом или следующем году). */
+  date: Date;
+  /** Целых дней до даты (0 — сегодня). */
+  days: number;
+}
+
+/**
+ * Ближайшие будущие вхождения: свидания и годовщины (вехи — отдельно, в панели).
+ * Считается обёрткой над nextDate/daysUntil — полночь-к-полуночи, без сдвига.
+ */
+export function upcomingOccurrences(events: CoupleEvent[], now: Date): UpcomingOccurrence[] {
+  const today = startOfDay(now);
+  return events
+    .filter((e) => e.kind !== "milestone")
+    .map((e) => ({ event: e, date: nextDate(e, now) }))
+    .filter(({ date }) => date >= today)
+    .map(({ event, date }) => ({ event, date, days: daysUntil(date, now) }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+/* ─── Форматирование (ru-RU, стабильно между Node и браузером) ─────────── */
+
+/** День для календарного квадратика: «15». */
+export function formatDayNumber(d: Date): string {
+  return d.toLocaleDateString("ru-RU", { day: "numeric" });
+}
+
+/** Месяц для квадратика: «авг». */
+export function formatMonthShort(d: Date): string {
+  return d.toLocaleDateString("ru-RU", { month: "short" }).replace(/\.$/, "");
+}
+
+/** Полная дата: «15 августа 2026 г.» */
+export function formatFullDate(d: Date): string {
+  return d.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+/** Заголовок месяца в сетке: «Август 2026». */
+export function formatMonthYear(d: Date): string {
+  const month = d.toLocaleDateString("ru-RU", { month: "long" });
+  return `${month.charAt(0).toUpperCase()}${month.slice(1)} ${d.getFullYear()}`;
 }

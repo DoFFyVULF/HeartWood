@@ -14,7 +14,7 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import type { EventKind } from "@/lib/data/events";
+import { toISODate, type EventKind } from "@/lib/data/events";
 import type { NewEventInput } from "./useEvents";
 import { HeartIcon, PlusIcon, StarIcon, TicketIcon } from "./icons";
 import styles from "./EventComposer.module.css";
@@ -25,14 +25,6 @@ const KIND_OPTIONS: { kind: EventKind; label: string; Icon: typeof TicketIcon }[
   { kind: "anniversary", label: "Годовщина", Icon: HeartIcon },
   { kind: "milestone", label: "Важная дата", Icon: StarIcon },
 ];
-
-// Локальная дата → ISO (YYYY-MM-DD), как хранит календарь.
-function toISODate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 /* ─── Хореография входа: мягко, без прыжков ─────────────────── */
 
@@ -60,15 +52,17 @@ interface EventComposerProps {
   /** Создаёт событие; возвращает false, если запись не сохранилась. */
   onCreate: (input: NewEventInput) => boolean;
   onClose: () => void;
+  /** Начальная дата (ISO) — выбранный день календаря; иначе «сегодня». */
+  initialDate?: string;
 }
 
-export function EventComposer({ onCreate, onClose }: EventComposerProps) {
+export function EventComposer({ onCreate, onClose, initialDate }: EventComposerProps) {
   const reduced = useReducedMotion();
   const { gender } = useGender();
 
   const [kind, setKind] = useState<EventKind>("date");
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState(() => toISODate(new Date()));
+  const [date, setDate] = useState(() => initialDate ?? toISODate(new Date()));
   const [error, setError] = useState<string | undefined>();
   const panelRef = useRef<HTMLDivElement>(null);
 
