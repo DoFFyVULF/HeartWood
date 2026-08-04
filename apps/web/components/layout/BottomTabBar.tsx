@@ -31,6 +31,7 @@ const MORE_PREFIXES = [
   routes.profile.path,
   routes.goals.path,
   routes.events.path,
+  routes.wishlist.path,
 ];
 
 export function BottomTabBar() {
@@ -66,6 +67,7 @@ export function BottomTabBar() {
               { emoji: "💑", label: "Профиль пары", href: routes.profile.path },
               { emoji: "🎯", label: "Цели", href: routes.goals.path },
               { emoji: "🗓", label: "Календарь", href: routes.events.path },
+              { emoji: "🎁", label: "Желания", href: routes.wishlist.path },
             ].map((item) => (
               <Link
                 key={item.label}

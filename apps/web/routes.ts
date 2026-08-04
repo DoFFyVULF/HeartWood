@@ -9,6 +9,7 @@ export const routes = {
   coupons: { path: "/coupons", label: "Купоны" },
   goals: { path: "/goals", label: "Цели" },
   events: { path: "/events", label: "Календарь" },
+  wishlist: { path: "/wishlist", label: "Желания" },
 } as const;
 
 export type RouteName = keyof typeof routes;
