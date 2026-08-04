@@ -20,6 +20,8 @@ const NAV_ITEMS: ReadonlyArray<{ label: string; path: string | null }> = [
   { label: "Свидания", path: routes.dates.path },
   { label: "Воспоминания", path: routes.memories.path },
   { label: "Купоны", path: routes.coupons.path },
+  { label: "Цели", path: routes.goals.path },
+  { label: "Календарь", path: routes.events.path },
 ];
 
 export function Header() {

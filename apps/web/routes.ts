@@ -7,6 +7,8 @@ export const routes = {
   dates: { path: "/dates", label: "Свидания" },
   memories: { path: "/memories", label: "Воспоминания" },
   coupons: { path: "/coupons", label: "Купоны" },
+  goals: { path: "/goals", label: "Цели" },
+  events: { path: "/events", label: "Календарь" },
 } as const;
 
 export type RouteName = keyof typeof routes;

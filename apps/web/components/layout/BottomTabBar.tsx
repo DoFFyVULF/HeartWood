@@ -26,7 +26,12 @@ const TABS: Tab[] = [
 ];
 
 // Страницы, которые открываются из шита «Ещё» — подсвечиваем его активным.
-const MORE_PREFIXES = [routes.memories.path, routes.profile.path];
+const MORE_PREFIXES = [
+  routes.memories.path,
+  routes.profile.path,
+  routes.goals.path,
+  routes.events.path,
+];
 
 export function BottomTabBar() {
   const pathname = usePathname();
@@ -59,6 +64,8 @@ export function BottomTabBar() {
             {[
               { emoji: "💌", label: "Воспоминания", href: routes.memories.path },
               { emoji: "💑", label: "Профиль пары", href: routes.profile.path },
+              { emoji: "🎯", label: "Цели", href: routes.goals.path },
+              { emoji: "🗓", label: "Календарь", href: routes.events.path },
             ].map((item) => (
               <Link
                 key={item.label}

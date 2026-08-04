@@ -1,0 +1,333 @@
+/* Создатель даты — спокойное модальное окно.
+   Чистая белая поверхность, волосяная рамка в цвет акцента, одна мягкая
+   тень. Никаких градиентных кромок и бегущих анимаций — только лёгкое
+   свечение за окном. Гамма — токены темы (--hwd-*), перекрашивается
+   по data-gender. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  isolation: isolate;
+}
+
+/* ── 0 · Скрим-подложка ─────────────────────────────────────── */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hwd-ink) 40%, transparent),
+    color-mix(in srgb, var(--hwd-ink) 58%, transparent)
+  );
+  backdrop-filter: blur(14px) saturate(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(110%);
+}
+
+/* ── 1 · Мягкое свечение за окном ───────────────────────────── */
+.aura {
+  position: absolute;
+  z-index: 1;
+  width: min(92vw, 30rem);
+  height: min(92vw, 30rem);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--hwd-glow) 0%, transparent 66%);
+  filter: blur(4px);
+}
+
+.stage {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+/* ── 2 · Карточка ───────────────────────────────────────────── */
+.card {
+  position: relative;
+  width: min(100%, 25rem);
+  border-radius: 1.6rem;
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.98),
+    rgb(255 255 255 / 0.9)
+  );
+  border: 1.5px solid color-mix(in srgb, var(--hwd-primary) 30%, transparent);
+  box-shadow:
+    0 32px 64px -28px rgb(30 27 60 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.95);
+  overflow: hidden;
+  outline: none;
+}
+
+.card:focus-visible {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--hwd-glow) 65%, transparent),
+    0 32px 64px -28px rgb(30 27 60 / 0.5);
+}
+
+.body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.4rem 1.4rem 1.5rem;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hwd-primary-deep);
+}
+
+.title {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--hwd-ink);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--hwd-ink-soft);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 22%, transparent);
+  transition: background 0.25s, color 0.25s, transform 0.25s;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: rgb(255 255 255 / 0.95);
+  color: var(--hwd-ink);
+  transform: rotate(90deg);
+}
+
+.close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--hwd-glow) 65%, transparent);
+}
+
+.closeIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* ── Форма ──────────────────────────────────────────────────── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fieldLabel {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--hwd-ink);
+}
+
+/* Типы — радио-карточки с иконками */
+.kindRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.kindBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem 0.4rem;
+  border-radius: 0.95rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--hwd-ink-soft);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 18%, transparent);
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+.kindBtn:hover {
+  transform: translateY(-2px);
+  background: var(--hwd-primary-soft);
+  color: var(--hwd-primary-deep);
+}
+
+.kindBtnActive {
+  background: var(--hwd-primary-soft);
+  color: var(--hwd-primary-deep);
+  border-color: color-mix(in srgb, var(--hwd-primary) 55%, transparent);
+  box-shadow: 0 6px 14px -6px var(--hwd-glow);
+}
+
+.kindBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--hwd-glow) 65%, transparent);
+}
+
+.kindIcon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* Поля ввода */
+.input {
+  width: 100%;
+  padding: 0.8rem 0.95rem;
+  border-radius: 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--hwd-ink);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 22%, transparent);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.input::placeholder {
+  color: var(--hwd-ink-soft);
+  opacity: 0.75;
+}
+
+.input:focus {
+  background: rgb(255 255 255 / 0.92);
+  border-color: var(--hwd-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hwd-glow) 40%, transparent);
+}
+
+/* Поле даты — чуть выше, чтобы нативный календарь не сжимал строку */
+.dateInput {
+  min-height: 2.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dateInput::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.hint {
+  margin: -0.05rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--hwd-ink-soft);
+}
+
+/* Ошибка */
+.error {
+  margin: -0.2rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e11d48;
+}
+
+/* ── 3 · Действия ───────────────────────────────────────────── */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1.55fr;
+  gap: 0.7rem;
+  margin-top: 0.4rem;
+}
+
+.cancel {
+  padding: 0.85rem 0.6rem;
+  border-radius: 1.05rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--hwd-ink-soft);
+  background: rgb(255 255 255 / 0.65);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink-soft) 25%, transparent);
+  transition: background 0.25s, color 0.25s, transform 0.25s;
+  cursor: pointer;
+}
+
+.cancel:hover {
+  background: rgb(255 255 255 / 0.95);
+  color: var(--hwd-ink);
+}
+
+.cancel:active {
+  transform: scale(0.97);
+}
+
+.cancel:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--hwd-glow) 65%, transparent);
+}
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.6rem;
+  border-radius: 1.05rem;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--hwd-primary), var(--hwd-primary-deep));
+  box-shadow: 0 16px 32px -14px var(--hwd-glow);
+  transition: box-shadow 0.25s, transform 0.25s;
+  cursor: pointer;
+}
+
+.submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -16px var(--hwd-glow);
+}
+
+.submit:active {
+  transform: scale(0.97);
+}
+
+.submit:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--hwd-glow) 65%, transparent),
+    0 16px 32px -14px var(--hwd-glow);
+}
+
+.submitIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .kindBtn:hover {
+    transform: none;
+  }
+}
