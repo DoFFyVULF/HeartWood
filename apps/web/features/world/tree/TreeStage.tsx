@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { WorldTree } from "@/features/world/tree/WorldTree";
+import { LivingTree, STAGE_NAMES, TREE_SPECIES } from "@/features/world/tree/LivingTree";
+import type { Mood, Season, SpeciesProp, TimeOfDay } from "@/features/world/tree/LivingTree";
 import { worldStatus } from "@/lib/data/worldStatus";
 import { cn } from "@/lib/utils";
 import {
@@ -19,36 +20,10 @@ import {
   StormIcon,
   RainbowIcon,
   MoonIcon,
-  MoodIcon,
-  MessageIcon,
-  DateIcon,
-  CouponIcon,
-  MemoryIcon,
-  VoiceIcon,
-  MilestoneIcon,
   FlaskIcon,
 } from "./components/icons";
-import type {
-  Season,
-  TimeOfDay,
-  Mood,
-  HangingItem,
-  HangingItemKind,
-  TreeEvent,
-  TreeEventType,
-} from "@/features/world/tree/config/stages";
 
-// ─── Стадии роста: имена и иконки для шкалы. Совпадают с STAGE_CONFIG нового дерева. ──
-const STAGE_NAMES = [
-  "Семечко",
-  "Росток",
-  "Саженец",
-  "Молодое дерево",
-  "Цветущее",
-  "Могучее",
-  "Древнее",
-  "Мировое дерево",
-];
+// ─── Стадии роста: имена и иконки — синхронизированы с LivingTree. ───────────
 const STAGE_ICONS = [
   SeedIcon,
   SproutIcon,
@@ -80,100 +55,22 @@ const TIMES: { value: TimeOfDay; label: string }[] = [
   { value: "night", label: "Ночь" },
 ];
 
+// Настроения LivingTree: clear / rain / storm / rainbow / moonlight.
 const MOODS: { value: Mood; label: string; Icon: (p: { className?: string }) => React.ReactElement }[] = [
-  { value: null, label: "Нейтрально", Icon: MoodIcon },
-  { value: "sun", label: "Солнце", Icon: SunIcon },
+  { value: "clear", label: "Ясно", Icon: SunIcon },
   { value: "rain", label: "Дождь", Icon: RainIcon },
   { value: "storm", label: "Гроза", Icon: StormIcon },
   { value: "rainbow", label: "Радуга", Icon: RainbowIcon },
-  { value: "moon", label: "Луна", Icon: MoonIcon },
+  { value: "moonlight", label: "Лунный свет", Icon: MoonIcon },
 ];
 
-const EVENT_BUTTONS: { type: TreeEventType; label: string; Icon: (p: { className?: string }) => React.ReactElement }[] = [
-  { type: "message", label: "Сообщение", Icon: MessageIcon },
-  { type: "date", label: "Свидание", Icon: DateIcon },
-  { type: "coupon", label: "Купон", Icon: CouponIcon },
-  { type: "memory", label: "Воспоминание", Icon: MemoryIcon },
-  { type: "voice", label: "Голос", Icon: VoiceIcon },
-  { type: "milestone", label: "Веха", Icon: MilestoneIcon },
+// Виды дерева LivingTree: 'auto' + пять архетипов из TREE_SPECIES.
+const SPECIES_OPTIONS: { value: SpeciesProp; label: string }[] = [
+  { value: "auto", label: "🎲 Авто" },
+  ...Object.values(TREE_SPECIES).map((s) => ({ value: s.id, label: `${s.emoji} ${s.label}` })),
 ];
 
-const ITEM_KINDS: { kind: HangingItemKind; label: string }[] = [
-  { kind: "memory", label: "Воспоминание" },
-  { kind: "surprise", label: "Сюрприз" },
-  { kind: "coupon", label: "Купон" },
-  { kind: "date", label: "Свидание" },
-];
-
-// Стартовый набор висящих элементов (как в демо workspace: memory@0, surprise@2,
-// coupon@4, date@6 — якоря по индексам устойчивых веток дерева).
-const INITIAL_ITEMS: HangingItem[] = [
-  { id: "h1", kind: "memory", anchor: 0, payload: { label: "Первый поцелуй" } },
-  { id: "h2", kind: "surprise", anchor: 2, payload: { label: "Сюрприз" } },
-  { id: "h3", kind: "coupon", anchor: 4, payload: { label: "Кино" } },
-  { id: "h4", kind: "date", anchor: 6, payload: { label: "Свид" } },
-];
-
-// ─── Шкала прогресса роста ────────────────────────────────────────────────────
-function ProgressScale({ level, progress }: { level: number; progress: number }) {
-  const overall = ((level + progress) / STAGE_NAMES.length) * 100;
-  const toNext = Math.round(progress * 100);
-  const StageIcon = STAGE_ICONS[level] ?? SeedIcon;
-
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="flex items-center gap-1.5 text-sm font-extrabold text-(--hwd-ink)">
-          <StageIcon aria-hidden className="size-4 text-(--hwd-primary)" />
-          {STAGE_NAMES[level]}
-        </p>
-        <p className="text-xs font-bold text-(--hwd-primary)">{toNext}% к следующей стадии</p>
-      </div>
-
-      {/* 8 сегментов — каждый сегмент одна стадия. Пройденные залиты, текущая частично. */}
-      <div
-        role="progressbar"
-        aria-valuenow={Math.round(overall)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`Рост дерева: стадия ${level + 1} из ${STAGE_NAMES.length}`}
-        className="mt-3 flex gap-1"
-      >
-        {STAGE_NAMES.map((name, i) => {
-          const filled = i < level ? 100 : i === level ? progress * 100 : 0;
-          return (
-            <div
-              key={name}
-              title={name}
-              className="relative h-2 flex-1 overflow-hidden rounded-full bg-black/5"
-            >
-              {filled > 0 && (
-                <span
-                  className="absolute inset-y-0 left-0 rounded-full bg-(--hwd-primary)"
-                  style={{ width: `${filled}%` }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-3 flex items-center justify-between text-[0.7rem] font-bold text-(--hwd-ink-soft)">
-        <span className="inline-flex items-center gap-1">
-          <SeedIcon className="size-3.5" />
-          Семечко
-        </span>
-        <span className="hidden sm:inline">
-          этап {level + 1} из {STAGE_NAMES.length}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          Мировое дерево
-          <WorldTreeIcon className="size-3.5" />
-        </span>
-      </div>
-    </div>
-  );
-}
+const SEED_PRESETS = ["древний дуб", "сакура у реки", "северный кедр", "плакучая ива", "баобаб", "белая берёза", "клен", "горная сосна"];
 
 // ─── Группа переключателей (сезон / время суток / настроение / уровень) ───────
 function SegGroup<T extends string | number | null>({
@@ -207,7 +104,7 @@ function SegGroup<T extends string | number | null>({
   );
 }
 
-// ─── Слайдер (прогресс / дни / streak) ────────────────────────────────────────
+// ─── Слайдер (прогресс роста) ─────────────────────────────────────────────────
 function SliderRow({
   label,
   value,
@@ -283,32 +180,26 @@ function PanelSection({ title, children }: { title: string; children: ReactNode 
 }
 
 /**
- * Садовая сцена + тестовая панель. Дерево теперь — новое (из workspace), со всеми
- * пропсами: уровень/прогресс, сезон, время суток, настроение, дни, streak,
- * висящие элементы, события, reduced motion. Панель ниже даёт полный контроль
- * над каждым из них — для проверки дерева.
+ * Садовая сцена + тестовая панель. Дерево — генеративное <LivingTree /> из этого
+ * же фиче-каталога: сид, вид, уровень/прогресс, сезон, время суток и настроение
+ * управляются панелью ниже. Сцена самодостаточна (SVG + CSS-анимации), поэтому
+ * на страницу ложится целиком, в стеклянную карточку языка страницы.
  */
 export function TreeStage() {
   // ── Рост ───────────────────────────────────────────────────────────────────
   const [level, setLevel] = useState<number>(worldStatus.level);
   const [levelProgress, setLevelProgress] = useState<number>(worldStatus.levelProgress);
 
+  // ── Вид дерева / сид генерации ─────────────────────────────────────────────
+  const [species, setSpecies] = useState<SpeciesProp>("auto");
+  const [seed, setSeed] = useState<string>(worldStatus.couple);
+
   // ── Сезон / время суток / настроение ──────────────────────────────────────
   const [season, setSeason] = useState<Season>("summer");
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("day");
   const [autoCycle, setAutoCycle] = useState(false);
-  const [mood, setMood] = useState<Mood>(null);
+  const [mood, setMood] = useState<Mood>("clear");
 
-  // ── Данные пары ────────────────────────────────────────────────────────────
-  const [daysTogether, setDaysTogether] = useState<number>(worldStatus.streak);
-  const [streak, setStreak] = useState<number>(7);
-
-  // ── Движение / события / висящие элементы ─────────────────────────────────
-  const [reduced, setReduced] = useState(false);
-  const [lastEvent, setLastEvent] = useState<TreeEvent | undefined>(undefined);
-  const [hangingItems, setHangingItems] = useState<HangingItem[]>(INITIAL_ITEMS);
-  const [openedItem, setOpenedItem] = useState<string | null>(null);
-  const [tapCount, setTapCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(true);
 
   // Автопереключение времени суток («○ авто»): каждые 8с → следующий этап.
@@ -342,21 +233,6 @@ export function TreeStage() {
     }
   };
 
-  const fireEvent = useCallback((type: TreeEventType) => {
-    setLastEvent({ type, at: Date.now() });
-  }, []);
-
-  const addItem = useCallback((kind: HangingItemKind) => {
-    setHangingItems((items) => [
-      ...items,
-      { id: `h-${Date.now()}-${items.length}`, kind, anchor: items.length % 8, payload: { label: kind } },
-    ]);
-  }, []);
-
-  const removeItem = useCallback((id: string) => {
-    setHangingItems((items) => items.filter((it) => it.id !== id));
-  }, []);
-
   const safeLevel = Math.min(MAX_LEVEL, Math.max(0, level)) as TreeLevel;
   const safeProgress = Math.max(0, Math.min(1, levelProgress));
   const stageName = STAGE_NAMES[safeLevel];
@@ -378,74 +254,21 @@ export function TreeStage() {
         </span>
       </div>
 
-      {/* Сцена: дерево на стекле. Цветные блобы дают глубину, тёплое свечение
-          держит землю у подножия. Кнопки теста +/− — в углу. */}
-      <div className="relative">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-12 -top-16 size-64 rounded-full bg-(--hwd-primary-soft)/80 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-10 -top-8 size-56 rounded-full bg-[#FFE7D6]/60 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-16 -right-10 size-72 rounded-full bg-[#FFE7D6]/70 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-[radial-gradient(ellipse_at_50%_100%,rgba(255,200,120,0.26),transparent_70%)]"
-        />
-
+      {/* Сцена: генеративное живое дерево в собственном тёмном кадре.
+          Кнопки теста +/− — в углу поверх кадра. Кадр ограничен по ширине
+          пропорцией сцены (1000:780), поэтому боковых полей нет. */}
+      <div className="relative mx-auto mt-4 w-full max-w-[820px]">
         <TestControls onGrow={grow} onShrink={shrink} />
-
-        {/* Desktop: полная сцена. Mobile: ниже — но без обрезки, дерево целиком. */}
-        <div className="relative hidden lg:block">
-          <WorldTree
-            level={safeLevel}
-            levelProgress={safeProgress}
-            daysTogether={daysTogether}
-            season={season}
-            timeOfDay={timeOfDay}
-            partnerMood={mood}
-            streak={streak}
-            hangingItems={hangingItems}
-            lastEvent={lastEvent}
-            onTreeTap={() => setTapCount((c) => c + 1)}
-            onItemOpen={(item) => setOpenedItem(item.payload?.label ?? item.kind)}
-            reducedMotion={reduced}
-          />
-        </div>
-        <div className="relative lg:hidden">
-          <WorldTree
-            compact
-            level={safeLevel}
-            levelProgress={safeProgress}
-            daysTogether={daysTogether}
-            season={season}
-            timeOfDay={timeOfDay}
-            partnerMood={mood}
-            streak={streak}
-            hangingItems={hangingItems}
-            lastEvent={lastEvent}
-            onTreeTap={() => setTapCount((c) => c + 1)}
-            onItemOpen={(item) => setOpenedItem(item.payload?.label ?? item.kind)}
-            reducedMotion={reduced}
-          />
-        </div>
-
-        {/* Живой отклик сцены: последний открытый висящий элемент. */}
-        {openedItem && (
-          <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/80 px-3 py-1 text-[0.7rem] font-bold text-(--hwd-ink) shadow-[0_10px_24px_-16px_rgb(30_27_60_/_0.35)] backdrop-blur-md">
-            Открыто: {openedItem}
-          </div>
-        )}
-      </div>
-
-      {/* Шкала прогресса — светлым текстом на стекле страницы. */}
-      <div className="border-t border-[color-mix(in_srgb,var(--hwd-ink-soft)_14%,transparent)] bg-white/30 px-5 py-5 sm:px-6">
-        <ProgressScale level={safeLevel} progress={safeProgress} />
+        <LivingTree
+          seedKey={seed}
+          species={species}
+          level={safeLevel}
+          levelProgress={safeProgress}
+          season={season}
+          timeOfDay={timeOfDay}
+          mood={mood}
+          showProgress
+        />
       </div>
 
       {/* Тестовая панель — раскрыта по умолчанию, сворачивается кнопкой. */}
@@ -489,6 +312,11 @@ export function TreeStage() {
               </div>
             </PanelSection>
 
+            {/* Вид дерева */}
+            <PanelSection title="Вид дерева">
+              <SegGroup options={SPECIES_OPTIONS} value={species} onChange={setSpecies} />
+            </PanelSection>
+
             {/* Сезон */}
             <PanelSection title="Сезон">
               <SegGroup options={SEASONS} value={season} onChange={setSeason} />
@@ -521,8 +349,8 @@ export function TreeStage() {
               </div>
             </PanelSection>
 
-            {/* Настроение партнёра */}
-            <PanelSection title="Настроение партнёра">
+            {/* Настроение */}
+            <PanelSection title="Настроение">
               <SegGroup
                 options={MOODS.map(({ value, label, Icon }) => ({
                   value,
@@ -538,104 +366,28 @@ export function TreeStage() {
               />
             </PanelSection>
 
-            {/* Дни вместе / серия */}
-            <PanelSection title="Дни пары">
-              <div className="space-y-2.5">
-                <SliderRow
-                  label="Дней вместе"
-                  min={0}
-                  max={1000}
-                  value={daysTogether}
-                  onChange={setDaysTogether}
-                />
-                <SliderRow
-                  label="Серия"
-                  min={0}
-                  max={365}
-                  value={streak}
-                  onChange={setStreak}
-                />
-              </div>
-            </PanelSection>
-
-            {/* События (EventBurst) */}
-            <PanelSection title="События">
-              <div className="flex flex-wrap gap-1.5">
-                {EVENT_BUTTONS.map(({ type, label, Icon }) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => fireEvent(type)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/70 px-3 py-1 text-xs font-bold text-(--hwd-ink-soft) transition hover:bg-white hover:text-(--hwd-ink) active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)"
-                  >
-                    <Icon className="size-3.5" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {tapCount > 0 && (
-                <p className="mt-2 text-[0.7rem] font-bold text-(--hwd-ink-soft)">
-                  тапов по дереву: {tapCount}
-                </p>
-              )}
-            </PanelSection>
-
-            {/* Висящие элементы */}
-            <PanelSection title={`Висящие элементы (${hangingItems.length})`}>
+            {/* Сид генерации */}
+            <PanelSection title="Сид">
               <div className="flex flex-wrap items-center gap-1.5">
-                {hangingItems.map((it) => (
-                  <span
-                    key={it.id}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/70 py-1 pl-3 pr-1.5 text-xs font-bold text-(--hwd-ink)"
-                  >
-                    {it.kind} @#{it.anchor}
-                    <button
-                      type="button"
-                      onClick={() => removeItem(it.id)}
-                      aria-label={`Убрать ${it.kind}`}
-                      className="flex size-4 items-center justify-center rounded-full bg-black/5 text-(--hwd-ink-soft) transition hover:bg-black/10 hover:text-(--hwd-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--hwd-glow)"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {ITEM_KINDS.map((k) => (
-                  <button
-                    key={k.kind}
-                    type="button"
-                    onClick={() => addItem(k.kind)}
-                    className="rounded-full border border-[color-mix(in_srgb,var(--hwd-primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--hwd-primary-soft)_70%,#ffffff)] px-3 py-1 text-xs font-bold text-(--hwd-primary) transition hover:bg-white active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)"
-                  >
-                    + {k.label}
-                  </button>
-                ))}
-              </div>
-            </PanelSection>
-
-            {/* Движение */}
-            <PanelSection title="Движение">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={reduced}
-                onClick={() => setReduced((r) => !r)}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)",
-                  reduced
-                    ? "border-transparent bg-(--hwd-primary) text-white shadow-sm"
-                    : "border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/70 text-(--hwd-ink-soft) hover:bg-white hover:text-(--hwd-ink)",
-                )}
-              >
-                <span
-                  className={cn(
-                    "inline-block size-2 rounded-full",
-                    reduced ? "bg-white" : "bg-(--hwd-ink-soft)/40",
-                  )}
+                <input
+                  type="text"
+                  value={seed}
+                  onChange={(e) => setSeed(e.target.value)}
+                  placeholder="строка-сид…"
+                  className="min-w-40 flex-1 rounded-full border border-[color-mix(in_srgb,var(--hwd-ink-soft)_22%,transparent)] bg-white/70 px-3 py-1 text-xs font-bold text-(--hwd-ink) outline-none transition placeholder:text-(--hwd-ink-soft)/60 focus:border-[color-mix(in_srgb,var(--hwd-primary)_50%,transparent)] focus:ring-4 focus:ring-(--hwd-glow)"
                 />
-                Только переходы состояний
-              </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSeed(`${SEED_PRESETS[Math.floor(Math.random() * SEED_PRESETS.length)]}-${Math.floor(Math.random() * 99)}`)
+                  }
+                  aria-label="Случайный сид"
+                  title="Случайный сид"
+                  className="rounded-full border border-[color-mix(in_srgb,var(--hwd-primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--hwd-primary-soft)_70%,#ffffff)] px-3 py-1 text-xs font-bold text-(--hwd-primary) transition hover:bg-white active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)"
+                >
+                  🎲
+                </button>
+              </div>
             </PanelSection>
           </div>
         )}
