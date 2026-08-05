@@ -1,0 +1,329 @@
+// HeartWood — схема данных пары.
+// Внутренняя валюта «сердечки»: баланс ЛИЧНЫЙ, транзакции — единственный способ менять счёт.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enum-ы ────────────────────────────────────────────────────────────
+
+/// Пол участника — перекрашивает палитру мира (см. lib/theme.tsx).
+enum Gender {
+  boy
+  girl
+}
+
+/// Роль участника в паре: первый зарегистрировавшийся — primary.
+enum CoupleRole {
+  primary
+  partner
+}
+
+/// Статус купона в книжке.
+enum CouponStatus {
+  draft
+  active
+  redeemed
+}
+
+/// Категория копилки — маппится на SVG-иконку на странице целей.
+enum GoalKind {
+  trip
+  home
+  celebration
+}
+
+/// Тип события календаря: свидание / годовщина (recurring) / веха.
+enum EventKind {
+  date
+  anniversary
+  milestone
+}
+
+/// Причина движения сердечек.
+enum HeartReason {
+  daily
+  memory
+  date
+  coupon_send
+  reaction
+  streak
+  coupon_redeem
+}
+
+// ─── Пользователи и пары ───────────────────────────────────────────────
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  gender       Gender?
+  /// Выбранное настроение (id из MOODS).
+  mood         String?
+  /// Эмодзи карточки профиля (плейсхолдер фото).
+  emoji        String?
+  /// Короткая подпись под именем на карточке профиля.
+  tagline      String?
+  role         CoupleRole  @default(primary)
+  couple       Couple?     @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Созданные пользователем сущности
+  memories         Memory[]
+  coupons          Coupon[]          @relation("CouponCreator")
+  receivedCoupons  Coupon[]          @relation("CouponRecipient")
+  redeemedCoupons  Coupon[]          @relation("CouponRedeemer")
+  goals            Goal[]            @relation("GoalCreator")
+  contributions    GoalContribution[]
+  events           Event[]           @relation("EventCreator")
+  invitedDates     Event[]           @relation("EventInviter")
+  wishes           Wish[]            @relation("WishCreator")
+  wishedWishes     Wish[]            @relation("Wisher")
+  claimedWishes    Wish[]            @relation("Claimer")
+  sentLetters      Letter[]          @relation("LetterSender")
+  receivedLetters  Letter[]          @relation("LetterRecipient")
+  heartTxs         HeartTx[]
+  reactions        Reaction[]        @relation("ReactionMember")
+}
+
+model Couple {
+  id         String   @id @default(cuid())
+  /// Код для вступления второй половинки (например, «ALMA-2024»).
+  code       String   @unique
+  coupleName String
+  /// Дата начала истории.
+  since      DateTime @default(now())
+  /// Текущая серия ежедневных входов пары (дней подряд).
+  streakDays Int      @default(1)
+  /// Взаимные реакции пары за месяц (счётчик на карточках профиля).
+  mutualReactions Int @default(0)
+  /// Поинты роста общего дерева — копятся за действия обеих половинок
+  /// (свидание, воспоминание, выкуп купона, письмо, желание, копилка…).
+  treePoints   Int    @default(0)
+  createdAt  DateTime @default(now())
+
+  members   User[]
+  memories  Memory[]
+  coupons   Coupon[]
+  goals     Goal[]
+  events    Event[]
+  wishes    Wish[]
+  letters   Letter[]
+  reactions Reaction[]
+}
+
+// ─── Воспоминания ──────────────────────────────────────────────────────
+
+model Memory {
+  id        String   @id @default(cuid())
+  title     String
+  emoji     String
+  date      DateTime
+  story     String?
+  /// Cover-миниатюра (data URL) — пока медиа живут локально в IndexedDB.
+  cover     String?
+  createdAt DateTime @default(now())
+
+  couple      Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId    String
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+
+  @@index([coupleId, createdAt])
+}
+
+// ─── Купоны ────────────────────────────────────────────────────────────
+
+model Coupon {
+  id          String       @id @default(cuid())
+  emoji       String
+  title       String
+  description String
+  status      CouponStatus @default(draft)
+  /// Цена выкупа в сердечках. У выкупающего списывается и СГОРАЕТ (автор не получает).
+  price       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  redeemedAt  DateTime?
+
+  couple       Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId     String
+  createdBy    User?  @relation("CouponCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById  String?
+  recipient    User?  @relation("CouponRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  recipientId  String?
+  redeemedBy   User?  @relation("CouponRedeemer", fields: [redeemedById], references: [id], onDelete: SetNull)
+  redeemedById String?
+
+  @@index([coupleId, status])
+}
+
+// ─── Цели (копилки в рублях) ───────────────────────────────────────────
+
+model Goal {
+  id          String   @id @default(cuid())
+  kind        GoalKind
+  title       String
+  description String   @default("")
+  /// Сколько уже накоплено, рублей.
+  saved       Int      @default(0)
+  /// Сколько нужно всего, рублей.
+  target      Int
+  /// SSR-safe срок: «к августу».
+  deadline    String   @default("постепенно")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  couple       Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId     String
+  createdBy    User?   @relation("GoalCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById  String?
+
+  milestones    GoalMilestone[]
+  contributions GoalContribution[]
+}
+
+model GoalMilestone {
+  id       String @id @default(cuid())
+  label    String
+  /// 0–100 — насколько веха близка.
+  progress Int    @default(0)
+  goal     Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId   String
+}
+
+model GoalContribution {
+  id     String   @id @default(cuid())
+  amount Int
+  at     DateTime @default(now())
+  goal   Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([goalId, at])
+}
+
+// ─── Календарь ─────────────────────────────────────────────────────────
+
+model Event {
+  id          String    @id @default(cuid())
+  kind        EventKind
+  title       String
+  description String?
+  /// ISO-дата. Для годовщин — «образец» дня (месяц/число), следующий год считается на клиенте.
+  date        DateTime
+  /// Годовщина повторяется каждый год.
+  recurring   Boolean   @default(false)
+  /// Формат свидания для статистики: picnic | coffee | cinema | walk | craft | home | nature | themed.
+  type        String?
+  /// Сколько часов длилось свидание (для «часов вместе»).
+  hours       Int?
+  /// Оценка свидания 1–5 (для средней оценки).
+  rating      Int?
+  /// Место свидания (для «любимого места»).
+  spot        String?
+  createdAt   DateTime  @default(now())
+
+  couple      Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId    String
+  createdBy   User?  @relation("EventCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  /// Кто зовёт на свидание.
+  invitedBy   User?  @relation("EventInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedById String?
+
+  @@index([coupleId, date])
+}
+
+// ─── Список желаний ────────────────────────────────────────────────────
+
+model Wish {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  /// Подарено — желание сбылось.
+  fulfilled   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  couple      Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId    String
+  createdBy   User?  @relation("WishCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  /// Кто загадал («Мечта Димы»).
+  wisher      User   @relation("Wisher", fields: [wisherId], references: [id], onDelete: Cascade)
+  wisherId    String
+  /// Кто взялся дарить — только партнёр мечтателя. Автор желания НЕ может заклеймить сам себя.
+  claimer     User?  @relation("Claimer", fields: [claimerId], references: [id], onDelete: SetNull)
+  claimerId   String?
+}
+
+// ─── Письма пары ─────────────────────────────────────────────────────────
+
+/// Любовное письмо из «Студии письма» на странице свиданий: доставляется
+/// в почту второй половинки (конверт в шапке). Управляется парами через API.
+model Letter {
+  id        String   @id @default(cuid())
+  message   String
+  /// Приписка P.S.
+  ps        String?
+  /// Ключи оформления конверта из envelope.ts (paper/seal/stamp).
+  paper     String
+  seal      String
+  stamp     String
+  /// Прочитано получателем — управляет бейджем «непрочитанные».
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  couple      Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId    String
+  /// Отправитель письма.
+  sender      User   @relation("LetterSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId    String
+  /// Получатель — вторая половинка отправителя.
+  recipient   User   @relation("LetterRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  @@index([coupleId, createdAt])
+}
+
+// ─── Реакции на карточках профиля ───────────────────────────────────────
+
+model Reaction {
+  id       String @id @default(cuid())
+  emoji    String
+  /// Сколько раз поставили этот эмодзи на карточку участника.
+  count    Int    @default(1)
+
+  couple   Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  coupleId String
+  /// Чья карточка — кому поставили реакции.
+  member   User   @relation("ReactionMember", fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String
+
+  @@unique([coupleId, memberId, emoji])
+}
+
+// ─── Сердечки (личные кошельки) ────────────────────────────────────────
+
+model HeartTx {
+  id        String      @id @default(cuid())
+  reason    HeartReason
+  /// Знак несёт направление: + заработано, − потрачено на выкуп.
+  amount    Int
+  /// Человеческая подпись: «Ежедневный вход», «Массаж на диване»…
+  label     String
+  at        DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  @@index([userId, at])
+}

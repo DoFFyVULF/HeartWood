@@ -1,10 +1,15 @@
-import { TreeStage } from "@/features/world/tree/TreeStage";
+"use client";
+
+import { GardenStage } from "@/features/world/tree/GardenStage";
 import { Satellite } from "@/features/world/tree/Satellite";
-import { worldStatus } from "@/lib/data/worldStatus";
+import { useWorld } from "@/lib/api-data";
 import motion from "@/components/motion.module.css";
 import styles from "./OrbitalStage.module.css";
 
 export function OrbitalStage() {
+  const { data: world } = useWorld();
+  const satellites = world?.satellites ?? [];
+
   return (
     <section aria-labelledby="world-stage-title">
       <h2 id="world-stage-title" className="sr-only">
@@ -14,10 +19,10 @@ export function OrbitalStage() {
       {/* Сцена на всю ширину страницы — дерево крупнее, небо и частицы
           заполняют края. */}
       <div className="w-full">
-        {/* Садовая сцена — стеклянная карточка в языке страницы, как «Недавняя
-            история». TreeStage — клиентский компонент: держит состояние роста
-            дерева и рендерит сцену, шкалу прогресса и кнопки теста +/−. */}
-        <TreeStage />
+        {/* Садовая сцена — стеклянная карточка в языке страницы. Дерево
+            растёт само, за действия пары: вид/стадия/сезон/время/настроение
+            приходят с сервера, панели тестирования нет. */}
+        <GardenStage />
 
         {/* Живые уголки мира — чип-рельса. */}
         <div className="mt-9">
@@ -33,7 +38,7 @@ export function OrbitalStage() {
           <ul
             className={`${styles.chipRail} -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 lg:mx-0 lg:flex-wrap lg:justify-center lg:overflow-visible lg:px-0 lg:pb-0`}
           >
-            {worldStatus.satellites.map((satellite, index) => (
+            {satellites.map((satellite, index) => (
               <li
                 key={satellite.key}
                 className={`${motion.popIn} flex snap-start`}

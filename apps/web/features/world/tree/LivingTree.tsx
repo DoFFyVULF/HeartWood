@@ -360,7 +360,10 @@ function buildCanopy(rng: Rand, list: BranchNode[], sp: SpeciesPreset) {
   const radius = cand.length
     ? Math.max(...cand.map((c) => Math.hypot(c.p.x - center.x, c.p.y - center.y))) + 42
     : 100;
-  return { clusters, center, radius };
+  /* Округление до 2 знаков гасит ULP-расхождения Math.cos/sin/hypot между
+     серверным и клиентским движками (иначе React падает в hydration mismatch
+     на cx/cy/rx/ry эллипса кроны). Визуально — менее 0.005px, незаметно. */
+  return { clusters, center: { x: Math.round(center.x * 100) / 100, y: Math.round(center.y * 100) / 100 }, radius: Math.round(radius * 100) / 100 };
 }
 function buildSpots(rng: Rand, clusters: Cluster[], n: number, at0: number, at1: number): Spot[] {
   const spots: Spot[] = [];
