@@ -1,99 +1,24 @@
 "use client";
 
-// Хук воспоминаний: localStorage для метаданных + IndexedDB для медиа.
+// Хук воспоминаний: метаданные — из API, локальные cover/media — из IndexedDB.
 //
-// Коллекция читается через useSyncExternalStore с КЭШИРОВАННЫМ снапшотом:
-// модульный кэш хранит ссылку на массив, который пересоздаётся только при
-// записи или кросс-таб синке. Инвалидация — только в subscribe (событие
-// heartwood:memories-change + нативный storage), иначе useSyncExternalStore
-// увидит новую ссылку на каждом рендере → бесконечный ререндер.
+// Метаданные (название, эмодзи, дата, история) хранятся на сервере и читаются
+// через useMemories из api-data. Полные фото/видео (Blob) — в IndexedDB;
+// к id воспоминания привязан маленький реестр ссылок (см. mediaStore).
+//
+// Мутации асинхронные и возвращают Promise: addMemory создаёт метаданные на
+// сервере, затем привязывает локальные cover/media к полученному id.
 
-import { useSyncExternalStore } from "react";
-import { seedMemories, type Memory } from "@/lib/data/memories";
-import { createId } from "./mediaUtils";
-
-const STORAGE_KEY = "heartwood.memories";
-const CHANGE_EVENT = "heartwood:memories-change";
-
-/** ~80% лимита localStorage (5MB) — сигнал, что пора чистить. */
-const WARN_THRESHOLD = 4 * 1024 * 1024;
-
-/* ─── Модульный кэш ─────────────────────────────────────────── */
-
-let cache: Memory[] | null = null;
-
-/** Читает пользовательские воспоминания из localStorage, парся ровно один раз. */
-function readUserMemories(): Memory[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Memory[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-/** Полный список: пользовательские (свежие) сверху, seeds — ниже. */
-function readAll(): Memory[] {
-  const user = readUserMemories();
-  return [...user, ...seedMemories];
-}
-
-/** Снапшот для серверной гидрации — только seeds, без медиа. */
-function getServerSnapshot(): Memory[] {
-  return seedMemories;
-}
-
-function getSnapshot(): Memory[] {
-  if (cache === null) cache = readAll();
-  return cache;
-}
-
-function subscribe(onStoreChange: () => void): () => void {
-  const fire = () => {
-    cache = null;
-    onStoreChange();
-  };
-  window.addEventListener(CHANGE_EVENT, fire);
-  window.addEventListener("storage", fire); // кросс-таб синк
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, fire);
-    window.removeEventListener("storage", fire);
-  };
-}
-
-/* ─── Безопасная запись ─────────────────────────────────────── */
-
-interface WriteResult {
-  ok: boolean;
-  quota?: boolean;
-}
-
-function writeMemories(next: Memory[]): WriteResult {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    cache = [...next, ...seedMemories];
-    window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
-    return { ok: true };
-  } catch (err) {
-    const isQuota =
-      err instanceof DOMException &&
-      (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED");
-    return { ok: false, quota: isQuota };
-  }
-}
-
-function estimateNearFull(): boolean {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return (raw?.length ?? 0) > WARN_THRESHOLD;
-  } catch {
-    return false;
-  }
-}
-
-/* ─── API ───────────────────────────────────────────────────── */
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemories as useMemoriesApi } from "@/lib/api-data";
+import {
+  deleteMediaMany,
+  deleteMemoryMeta,
+  getMemoryMeta,
+  isMediaStorageNearFull,
+  putMemoryMeta,
+} from "./mediaStore";
+import { toMemory, type Memory, type MemoryMedia } from "./memoryModel";
 
 export interface AddMemoryInput {
   title: string;
@@ -101,46 +26,132 @@ export interface AddMemoryInput {
   date: string;
   story?: string;
   cover?: string;
-  media: Memory["media"];
+  media: MemoryMedia[];
 }
 
+export interface AddMemoryResult {
+  ok: boolean;
+  memory?: Memory;
+}
+
+/** Локальные дополнения по id воспоминания — загружаются из IndexedDB. */
+type ExtrasMap = Record<string, { cover?: string; media: MemoryMedia[] }>;
+
 export function useMemories() {
-  const memories = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const { data, add, update, remove, loading } = useMemoriesApi();
+  const [extras, setExtras] = useState<ExtrasMap>({});
+  const [storageNearFull, setStorageNearFull] = useState(false);
 
-  /** Создаёт воспоминание. Возвращает { ok, memory?, quota? }. */
-  function addMemory(input: AddMemoryInput): WriteResult & { memory?: Memory } {
-    const user = readUserMemories();
-    const memory: Memory = {
-      ...input,
-      id: createId(),
-      createdAt: Date.now(),
+  /* Подгрузка локальных cover/media для каждого воспоминания из API.
+     Появление данных — единственный триггер; экстрас дозагружаются один раз. */
+  useEffect(() => {
+    if (!data) return;
+    let cancelled = false;
+    void (async () => {
+      const found: ExtrasMap = {};
+      await Promise.all(
+        data.map(async (view) => {
+          const meta = await getMemoryMeta(view.id);
+          if (meta && !cancelled) found[view.id] = meta;
+        }),
+      );
+      if (!cancelled) setExtras(found);
+    })();
+    return () => {
+      cancelled = true;
     };
-    const result = writeMemories([memory, ...user]);
-    if (!result.ok) return result;
-    return { ok: true, memory };
-  }
+  }, [data]);
 
-  function updateMemory(id: string, patch: Partial<AddMemoryInput>): boolean {
-    const user = readUserMemories();
-    const idx = user.findIndex((m) => m.id === id);
-    if (idx === -1) return false;
-    const next = [...user];
-    next[idx] = { ...next[idx], ...patch };
-    return writeMemories(next).ok;
-  }
+  /* Оценка занятости IndexedDB — разово и при добавлении/удалении медиа. */
+  useEffect(() => {
+    let cancelled = false;
+    void isMediaStorageNearFull().then((near) => {
+      if (!cancelled) setStorageNearFull(near);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  function deleteMemory(id: string): boolean {
-    const user = readUserMemories();
-    const next = user.filter((m) => m.id !== id);
-    if (next.length === user.length) return false;
-    return writeMemories(next).ok;
-  }
+  const memories = useMemo<Memory[]>(
+    () => (data ?? []).map((view) => toMemory(view, extras[view.id])),
+    [data, extras],
+  );
+
+  /** Создаёт метаданные на сервере и привязывает локальные cover/media. */
+  const addMemory = useCallback(
+    async (input: AddMemoryInput): Promise<AddMemoryResult> => {
+      const view = await add({
+        title: input.title,
+        emoji: input.emoji,
+        date: input.date,
+        story: input.story,
+      });
+      if (!view) return { ok: false };
+      const local = { cover: input.cover, media: input.media };
+      await putMemoryMeta(view.id, local);
+      setExtras((prev) => ({ ...prev, [view.id]: local }));
+      return { ok: true, memory: toMemory(view, local) };
+    },
+    [add],
+  );
+
+  /**
+   * Обновляет метаданные (title/emoji/date/story) и/или локальные
+   * cover/media. Возвращает false, если серверное обновление не прошло.
+   */
+  const updateMemory = useCallback(
+    async (id: string, patch: Partial<AddMemoryInput>): Promise<boolean> => {
+      const { cover, media, ...metaPatch } = patch;
+      const hasMeta = Object.keys(metaPatch).length > 0;
+      if (hasMeta) {
+        const ok = await update(id, metaPatch);
+        if (!ok) return false;
+      }
+      if (cover !== undefined || media !== undefined) {
+        const prev = extras[id] ?? { media: [] };
+        const next = { cover: cover ?? prev.cover, media: media ?? prev.media };
+        await putMemoryMeta(id, next);
+        setExtras((p) => ({ ...p, [id]: next }));
+      }
+      return true;
+    },
+    [update, extras],
+  );
+
+  /** Удаляет локальные Blob-ы, реестр и метаданные на сервере. */
+  const deleteMemory = useCallback(
+    async (id: string): Promise<boolean> => {
+      const local = extras[id];
+      const ids = local?.media?.map((m) => m.id) ?? [];
+      if (ids.length > 0) {
+        try {
+          await deleteMediaMany(ids);
+        } catch {
+          // Blob-ы могут отсутствовать — метаданные всё равно удаляем
+        }
+      }
+      try {
+        await deleteMemoryMeta(id);
+      } catch {
+        // реестр может отсутствовать
+      }
+      setExtras((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return remove(id);
+    },
+    [remove, extras],
+  );
 
   return {
     memories,
     addMemory,
     updateMemory,
     deleteMemory,
-    storageNearFull: estimateNearFull(),
+    storageNearFull,
+    loading,
   };
 }

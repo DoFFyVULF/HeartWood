@@ -4,7 +4,7 @@
 // купонов: контур, без эмодзи.
 
 import type { ComponentType } from "react";
-import type { EventKind } from "@/lib/data/events";
+import type { EventKind } from "@/lib/types";
 
 interface IconProps {
   className?: string;

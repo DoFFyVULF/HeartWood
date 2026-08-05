@@ -7,6 +7,8 @@ import { GenderPicker } from "@/components/ui/GenderPicker";
 import { PasswordStrength } from "@/components/ui/PasswordStrength";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { SuccessPanel } from "@/components/ui/SuccessPanel";
+import { useAuth } from "@/lib/auth";
+import { ApiError } from "@/lib/api";
 import { useGender } from "@/lib/theme";
 import { routes } from "@/routes";
 import { isEmail } from "@/features/auth/validation";
@@ -17,6 +19,7 @@ type Errors = Partial<
 
 export default function RegisterPage() {
   const { gender, setGender } = useGender();
+  const { register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +28,10 @@ export default function RegisterPage() {
   const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [touched, setTouched] = useState(false);
-  const [status, setStatus] = useState<"idle" | "submitting" | "success">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting">("idle");
+  const [serverError, setServerError] = useState<string | null>(null);
+  // Код НОВОЙ пары — показать, чтобы позвать вторую половинку.
+  const [createdCouple, setCreatedCouple] = useState<string | null>(null);
 
   function validate(): boolean {
     const next: Errors = {};
@@ -39,21 +45,42 @@ export default function RegisterPage() {
     return Object.keys(next).length === 0;
   }
 
-  function onSubmit(event: React.FormEvent) {
+  async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setTouched(true);
     if (!validate()) return;
+    setServerError(null);
     setStatus("submitting");
-    // Stand-in for a real API call — the backend is wired up separately.
-    window.setTimeout(() => setStatus("success"), 1200);
+    try {
+      const res = await register(
+        {
+          name,
+          email,
+          password,
+          gender,
+          coupleCode: coupleCode.trim() || undefined,
+        },
+        true,
+      );
+      if (res.coupleCode) {
+        // Первая половинка: показать код пары для приглашения.
+        setCreatedCouple(res.coupleCode);
+      }
+      // Вступление по коду → guard RedirectIfAuthed сам уводит в мир.
+    } catch (err) {
+      setServerError(
+        err instanceof ApiError ? err.message : "Что-то пошло не так — попробуйте ещё раз",
+      );
+      setStatus("idle");
+    }
   }
 
-  if (status === "success") {
+  if (createdCouple) {
     return (
       <SuccessPanel
         emoji={gender === "girl" ? "💗" : gender === "boy" ? "💙" : "🎉"}
         title="Мир создан!"
-        subtitle="Осталось позвать свою половинку по коду пары — и ваша история начнёт расти 🌱"
+        subtitle={`Код вашей пары: ${createdCouple}. Позовите вторую половинку — и ваша история начнёт расти 🌱`}
         primary={{ label: "Открыть ваш мир →", href: routes.home.path }}
         secondary={{ label: "Вернуться ко входу", href: routes.login.path }}
       />
@@ -160,6 +187,12 @@ export default function RegisterPage() {
         {errors.agree && (
           <p role="alert" className="text-xs font-bold text-rose-500">
             {errors.agree}
+          </p>
+        )}
+
+        {serverError && (
+          <p role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-500">
+            {serverError}
           </p>
         )}
 

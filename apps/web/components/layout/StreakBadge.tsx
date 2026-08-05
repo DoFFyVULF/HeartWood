@@ -3,7 +3,7 @@
 import { AnimatePresence, animate, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { worldStatus } from "@/lib/data/worldStatus";
+import { useWorld } from "@/lib/api-data";
 import styles from "./StreakBadge.module.css";
 
 /** Милестоуны серии, к которым подводит прогресс-бар в поповере. */
@@ -31,8 +31,9 @@ function pluralDays(n: number) {
  * анимацию при изменении значения.
  */
 export function StreakBadge({ className }: { className?: string }) {
-  const streak = worldStatus.streak;
-  const couple = worldStatus.couple;
+  const { data: world } = useWorld();
+  const streak = world?.streak ?? 0;
+  const couple = world?.couple ?? "";
   const reduced = useReducedMotion();
 
   // ── Count-up ─────────────────────────────────────────────

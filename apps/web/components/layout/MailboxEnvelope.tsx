@@ -8,12 +8,13 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { EASE } from "@/lib/сonstants";
-import { coupleProfile, findPersonByGender } from "@/features/world/profile/couple";
-import { useGender } from "@/lib/theme";
+import { useCouple, useLetters } from "@/lib/api-data";
+import { envelopeOptions, type EnvelopeOption } from "@/features/world/dates/envelope";
+import type { LetterView } from "@/lib/types";
 import styles from "./MailboxEnvelope.module.css";
 
 /* Тайминги механики конверта — единый источник правды (конверт v2) */
@@ -32,45 +33,42 @@ interface MailLetter {
   stamp: string;
   subject: string;
   message: string;
+  ps?: string;
   date: string;
   read: boolean;
+  /** true, если письмо пришло половинке (я отправил). Входящие — от неё. */
+  incoming: boolean;
+  /** Кто писал: для подписи адресной строки в списке. */
+  fromName: string;
 }
 
-/* Мок писем живёт прямо в компоненте — сколько непрочитанных, легко поменять. */
-const SEED: MailLetter[] = [
-  {
-    id: "l1",
-    fromEmoji: "🌸",
-    seal: "💌",
-    stamp: "💕",
-    subject: "Пикник у реки",
-    message:
-      "Помнишь тот закат у реки?\nХочу повторить его в субботу —\nты, я и плед, а город внизу.",
-    date: "2 августа",
-    read: false,
-  },
-  {
-    id: "l2",
-    fromEmoji: "😎",
-    seal: "❤️",
-    stamp: "✈️",
-    subject: "Сюрприз на выходных",
-    message:
-      "У меня идея получше кино.\nСобирайся к полудню —\nя всё придумал, только поверь.",
-    date: "1 августа",
-    read: false,
-  },
-  {
-    id: "l3",
-    fromEmoji: "🌸",
-    seal: "🕰️",
-    stamp: "📸",
-    subject: "Ты снова задерживаешься",
-    message: "Ужин уже на столе.\nНе спеши, я подогрею,\nкогда придёшь.",
-    date: "30 июля",
-    read: true,
-  },
-];
+/** Эмодзи опции-кастомизации (печать/марка) по ключу — с fallback. */
+function optionEmoji(catKey: string, key: string, fallback: string): string {
+  const opts = envelopeOptions(catKey) as EnvelopeOption[];
+  return opts.find((o) => o.key === key)?.emoji ?? fallback;
+}
+
+/** Приводим письмо из API к форме почты. Тема — первая строка письма. */
+function toMailLetter(l: LetterView, partnerName: string): MailLetter {
+  const firstLine = l.message.split("\n").find((s) => s.trim().length > 0) ?? l.message;
+  const who = l.incoming ? partnerName : "вы";
+  return {
+    id: l.id,
+    fromEmoji: l.sender.emoji ?? (l.incoming ? "💌" : "✉️"),
+    seal: optionEmoji("seal", l.seal, "💌"),
+    stamp: optionEmoji("stamp", l.stamp, "💕"),
+    subject: firstLine,
+    message: l.message,
+    ps: l.ps ?? undefined,
+    date: new Date(l.createdAt).toLocaleDateString("ru-RU", {
+      day: "numeric",
+      month: "short",
+    }),
+    read: l.read,
+    incoming: l.incoming,
+    fromName: l.incoming ? partnerName : "вам",
+  };
+}
 
 /* Брызги эмодзи в момент вскрытия конверта */
 const BURST = Array.from({ length: 10 }, (_, i) => ({
@@ -137,10 +135,10 @@ function TypewriterText({
  * полноэкранный оверлей, где по центру стоит большой интерактивный
  * конверт — как в «конверте v2»: клик ломает сургуч, клапан откидывается,
  * письмо поднимается и печатается строчка за строчкой, затем читается целиком.
- * Данные — мок в компоненте; адрес подставляется из профиля пары по полу.
+ * Письма — реальные из АПИ (входящие от половинки и исходящие от меня);
+ * адрес подставляется из профиля пары.
  */
 export function MailboxEnvelope() {
-  const { gender } = useGender();
   const motionless = useReducedMotion() === true;
 
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -151,10 +149,36 @@ export function MailboxEnvelope() {
   // Порталов на сервере нет (там document отсутствует) — флаг без эффекта.
   const [isClient] = useState(() => typeof document !== "undefined");
   const [readerId, setReaderId] = useState<string | null>(null);
-  const [letters, setLetters] = useState<MailLetter[]>(SEED);
-  const [selectedId, setSelectedId] = useState(
-    () => SEED.find((l) => !l.read)?.id ?? SEED[0].id
+
+  // «Я» и партнёр — из профиля пары (API). Письма — из АПИ (реальные данные).
+  const { data: coupleData } = useCouple();
+  const me = coupleData?.me;
+  const members = coupleData?.couple.members ?? [];
+  const viewer = me ? { id: me.id, name: me.name } : { id: "me", name: "половинка" };
+  const partner =
+    members.find((m) => m.id !== me?.id) ??
+    members[0] ?? { id: "partner", name: "половинка", gender: null, emoji: null, tagline: null, role: "", mood: null, presence: { state: "away", label: "" }, reactions: [] };
+
+  // Письма пары: входящие + исходящие, отсортированы по дате (новые сверху).
+  const { data: lettersData } = useLetters();
+  const letters = useMemo(
+    () =>
+      (lettersData ?? [])
+        .slice()
+        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+        .map((l) => toMailLetter(l, partner.name)),
+    [lettersData, partner.name],
   );
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Непрочитанные — только входящие, которые ещё не открывали.
+  const unread = useMemo(
+    () => letters.filter((l) => l.incoming && !l.read).length,
+    [letters],
+  );
+  const selected = letters.find((l) => l.id === selectedId) ?? letters[0] ?? null;
+  const readerLetter = letters.find((l) => l.id === readerId) ?? null;
 
   const panelId = useId();
   const readerTitleId = useId();
@@ -169,13 +193,6 @@ export function MailboxEnvelope() {
   const tiltX = useSpring(useTransform(py, [0, 1], [6, -6]), { stiffness: 120, damping: 16 });
   const tiltY = useSpring(useTransform(px, [0, 1], [-7, 7]), { stiffness: 120, damping: 16 });
 
-  const unread = letters.filter((l) => !l.read).length;
-  const selected = letters.find((l) => l.id === selectedId) ?? letters[0];
-  const viewer = findPersonByGender(gender);
-  const partner =
-    coupleProfile.members.find((m) => m.id !== viewer.id) ?? coupleProfile.members[0];
-  const readerLetter = letters.find((l) => l.id === readerId) ?? null;
-
   const closeOverlay = useCallback(() => {
     setOverlayOpen(false);
     setEnvOpen(false);
@@ -183,11 +200,15 @@ export function MailboxEnvelope() {
     triggerRef.current?.focus();
   }, []);
 
-  // Прочитано — при закрытии читалки, чтобы письмо не «прочитывалось» зря.
+  const { markRead } = useLetters();
+
+  // Прочитано — помечаем на сервере и локально (чтобы закрыть читалку).
+  // markRead не вызывает reload-пессимистически: бейдж обновится при следующей
+  // загрузке списка (после отправки или повторного открытия оверлея).
   const closeReader = useCallback(() => {
-    setLetters((prev) => prev.map((l) => (l.id === readerId ? { ...l, read: true } : l)));
+    if (readerId) void markRead(readerId);
     setReaderId(null);
-  }, [readerId]);
+  }, [readerId, markRead]);
 
   // Esc: сначала читалка, потом оверлей.
   useEffect(() => {
@@ -319,7 +340,9 @@ export function MailboxEnvelope() {
                       </div>
                     </div>
 
-                    {/* Сцена с конвертом по центру */}
+                    {/* Сцена с конвертом по центру (пусто — пока письма нет) */}
+                    {selected ? (
+                      <>
                     <div className={styles.stage}>
                       <div
                         role="button"
@@ -507,10 +530,10 @@ export function MailboxEnvelope() {
                           <span className={styles.listInfo}>
                             <span className={styles.listSubject}>{l.subject}</span>
                             <span className={styles.listDate}>
-                              {l.date} · от {partner.name}
+                              {l.date} · {l.incoming ? `от ${partner.name}` : "от вас"}
                             </span>
                           </span>
-                          {!l.read ? (
+                          {l.incoming && !l.read ? (
                             <span className={styles.unreadDot} aria-label="Непрочитано" />
                           ) : (
                             <span className={styles.readCheck} aria-label="Прочитано">
@@ -520,6 +543,16 @@ export function MailboxEnvelope() {
                         </button>
                       ))}
                     </div>
+                      </>
+                    ) : (
+                      <div className={styles.emptyState}>
+                        <span className={styles.emptyEmoji} aria-hidden>📭</span>
+                        <p className={styles.emptyTitle}>Почта пока пуста</p>
+                        <p className={styles.emptyText}>
+                          Письма из Студии письма появятся здесь — входящие и исходящие.
+                        </p>
+                      </div>
+                    )}
                   </motion.div>
                 </motion.div>
               )}
@@ -567,7 +600,7 @@ export function MailboxEnvelope() {
                           {readerLetter.subject}
                         </h2>
                         <p className={styles.readerMeta}>
-                          от {partner.name} · {readerLetter.date}
+                          {readerLetter.incoming ? `от ${partner.name}` : "от вас"} · {readerLetter.date}
                         </p>
                       </div>
                     </div>
@@ -575,8 +608,11 @@ export function MailboxEnvelope() {
                     <div className={styles.readerBody}>
                       <p className={styles.readerGreeting}>Привет, {viewer.name}!</p>
                       <p className={styles.readerText}>{readerLetter.message}</p>
+                      {readerLetter.ps && (
+                        <p className={styles.readerPs}>P.S. {readerLetter.ps}</p>
+                      )}
                       <p className={styles.readerSign}>
-                        Твой {partner.name} · {readerLetter.seal}
+                        {readerLetter.incoming ? `Твой ${partner.name}` : "С любовью"} · {readerLetter.seal}
                       </p>
                     </div>
                   </motion.div>

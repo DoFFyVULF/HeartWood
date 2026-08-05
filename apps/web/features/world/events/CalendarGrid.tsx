@@ -20,8 +20,8 @@ import {
   isSameDay,
   occurrencesInMonth,
   toISODate,
-  type CoupleEvent,
-} from "@/lib/data/events";
+} from "@/lib/dateUtils";
+import type { EventView } from "@/lib/types";
 import { ChevronLeftIcon, ChevronRightIcon, KIND_ICON } from "./icons";
 import styles from "./CalendarGrid.module.css";
 
@@ -35,7 +35,7 @@ function shiftMonth(view: { y: number; m: number }, delta: number): { y: number;
 }
 
 interface CalendarGridProps {
-  events: CoupleEvent[];
+  events: EventView[];
   /** «сейчас» — уже разрешённая клиентская дата (fallback до гидрации). */
   now: Date;
   /** Выбранный день (ISO) или null до клиентской гидрации. */
@@ -61,7 +61,7 @@ export function CalendarGrid({ events, now, selected, onSelect }: CalendarGridPr
 
   // Маркеры только для ячеек видимого месяца.
   const marksByIso = useMemo(() => {
-    const map = new Map<string, CoupleEvent[]>();
+    const map = new Map<string, EventView[]>();
     occurrences.forEach((list, day) => {
       map.set(
         toISODate(new Date(effectiveView.y, effectiveView.m, day)),

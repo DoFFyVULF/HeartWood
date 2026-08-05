@@ -7,7 +7,6 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useMemories } from "./useMemories";
 import { MemoryPolaroid } from "./MemoryPolaroid";
 import { MemoryGallery } from "./MemoryGallery";
-import { deleteMediaMany } from "./mediaStore";
 import { routes } from "@/routes";
 import { ChevronLeftIcon, TrashIcon } from "./icons";
 import styles from "./MemoryDetailPage.module.css";
@@ -61,14 +60,7 @@ export function MemoryDetailPage({ id }: { id: string }) {
 
   async function handleDelete() {
     setConfirmingDelete(false);
-    if (current.media.length > 0) {
-      try {
-        await deleteMediaMany(current.media.map((m) => m.id));
-      } catch {
-        // Blob-ы могут отсутствовать — метаданные всё равно удаляем
-      }
-    }
-    deleteMemory(id);
+    await deleteMemory(id); // чистит локальные Blob-ы, реестр и метаданные
     router.push(routes.memories.path);
   }
 
@@ -108,7 +100,10 @@ export function MemoryDetailPage({ id }: { id: string }) {
       </div>
 
       {/* Галерея */}
-      <MemoryGallery memory={memory} onChange={(patch) => updateMemory(id, patch)} />
+      <MemoryGallery
+        memory={memory}
+        onChange={(patch) => void updateMemory(id, patch)}
+      />
 
       {/* Удаление */}
       <div className={styles.dangerZone}>

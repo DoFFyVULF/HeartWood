@@ -24,12 +24,8 @@ import {
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EASE } from "@/lib/сonstants";
-import { datesStatus, type EnvelopeOption } from "@/lib/data/datesStatus";
-import {
-  coupleProfile,
-  findPersonByGender,
-} from "@/features/world/profile/couple";
-import { useGender } from "@/lib/theme";
+import { envelopeOptions, type EnvelopeOption } from "./envelope";
+import { useAuth } from "@/lib/auth";
 import styles from "./LetterComposer.module.css";
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -47,7 +43,8 @@ export interface LetterData {
 }
 
 interface LetterComposerProps {
-  onSend?: (data: LetterData) => void;
+  /** Отправка письма. Верните false, если не удалось — квитанции не будет. */
+  onSend?: (data: LetterData) => Promise<boolean>;
 }
 
 /* ─── Константы хореографии ──────────────────────────────────── */
@@ -80,17 +77,11 @@ const STAGE_HINTS: Record<string, string> = {
 
 const MSG_MAX = 420;
 
-/* ─── Варианты оформления — единый источник: datesStatus ─────── */
+/* ─── Варианты оформления — единый источник: envelope.ts ──────── */
 
-function getOptions(catKey: string): EnvelopeOption[] {
-  return (
-    datesStatus.envelopeCustomizations.find((c) => c.key === catKey)?.options ?? []
-  );
-}
-
-const PAPER_OPTS = getOptions("paper");
-const SEAL_OPTS = getOptions("seal");
-const STAMP_OPTS = getOptions("stamp");
+const PAPER_OPTS = envelopeOptions("paper");
+const SEAL_OPTS = envelopeOptions("seal");
+const STAMP_OPTS = envelopeOptions("stamp");
 
 /** Воск — в цветах приложения; оттиски различаются иконкой-эмодзи. */
 const SEAL_COLORS: Record<string, { a: string; b: string }> = {
@@ -707,12 +698,14 @@ function SendPanel({
   letter,
   onSend,
   sending,
+  error,
 }: {
   stamp: EnvelopeOption;
   setStamp: React.Dispatch<React.SetStateAction<EnvelopeOption>>;
   letter: LetterData;
   onSend: () => void;
   sending: boolean;
+  error: string | null;
 }) {
   return (
     <>
@@ -740,6 +733,11 @@ function SendPanel({
       <button className={cn(styles.btn, styles.btnPrimary)} onClick={onSend} disabled={sending}>
         {sending ? "Летит…" : "Отправить"} <span aria-hidden>🕊️</span>
       </button>
+      {error && (
+        <p className={styles.fnote} role="alert">
+          {error}
+        </p>
+      )}
       <p className={styles.fnote}>голубь уже разминает крылья</p>
     </>
   );
@@ -748,7 +746,7 @@ function SendPanel({
 /* ─── Компонент ──────────────────────────────────────────────── */
 
 export function LetterComposer({ onSend }: LetterComposerProps) {
-  const { gender } = useGender();
+  const { user, couple } = useAuth();
   const mounted = useMounted();
 
   const [step, setStep] = useState("write");
@@ -758,16 +756,18 @@ export function LetterComposer({ onSend }: LetterComposerProps) {
   const [foldPhase, setFoldPhase] = useState("flat");
   const [flapClosed, setFlapClosed] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [sentAt, setSentAt] = useState<Date | null>(null);
   const [flyDelta, setFlyDelta] = useState({ x: 0, y: 210 });
 
-  /* «Кому/от» предзаполнены из профиля пары по выбранному полу */
+  /* «Кому/от» предзаполнены из текущего пользователя и его партнёра */
   const [letter, setLetter] = useState<LetterData>(() => {
-    const me = findPersonByGender(gender);
-    const partner = coupleProfile.members.find((m) => m.id !== me.id) ?? coupleProfile.members[0];
+    const meName = user?.name ?? "твой кто-то";
+    const partnerName =
+      couple?.members.find((m) => m.id !== user?.id)?.name ?? "самой любимой";
     return {
-      to: partner.name,
-      from: me.name,
+      to: partnerName,
+      from: meName,
       message: "",
       ps: "",
       paper: PAPER_OPTS[0].key,
@@ -830,20 +830,29 @@ export function LetterComposer({ onSend }: LetterComposerProps) {
   const runSend = useCallback(() => {
     if (sending || step !== "send") return;
     setSending(true);
-    t(1300, () => {
-      setSending(false);
+    setSendError(null);
+    // Полёт конверта идёт, пока письмо уходит в API; квитанция — только при успехе.
+    t(1300, async () => {
       const at = new Date();
+      try {
+        const ok = await onSendRef.current?.({
+          to: letter.to,
+          from: letter.from,
+          message: letter.message,
+          ps: letter.ps,
+          paper: paper.key,
+          seal: seal.key,
+          stamp: stamp.key,
+        });
+        if (ok === false) throw new Error("noop");
+      } catch {
+        setSending(false);
+        setSendError("Не получилось отправить — попробуйте ещё раз");
+        return;
+      }
+      setSending(false);
       setSentAt(at);
       setStep("sent");
-      onSendRef.current?.({
-        to: letter.to,
-        from: letter.from,
-        message: letter.message,
-        ps: letter.ps,
-        paper: paper.key,
-        seal: seal.key,
-        stamp: stamp.key,
-      });
     });
   }, [sending, step, t, letter, paper, seal, stamp]);
 
@@ -853,6 +862,7 @@ export function LetterComposer({ onSend }: LetterComposerProps) {
     setFoldPhase("flat");
     setFlapClosed(false);
     setSending(false);
+    setSendError(null);
     setSentAt(null);
     hold.reset();
     setStep("write");
@@ -1046,7 +1056,7 @@ export function LetterComposer({ onSend }: LetterComposerProps) {
                 {step === "send" && (
                   <SendPanel
                     stamp={stamp} setStamp={setStamp} letter={letter}
-                    onSend={runSend} sending={sending}
+                    onSend={runSend} sending={sending} error={sendError}
                   />
                 )}
               </>

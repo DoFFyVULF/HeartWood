@@ -15,16 +15,15 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import type { AuthorId } from "@/lib/data/wishlist";
-import type { NewWishInput } from "./useWishlist";
 import { DreamIcon, GiftIcon, PlusIcon } from "./icons";
 import styles from "./WishlistComposer.module.css";
 
-// Кто загадывает — радио-карточки с именами пары.
-const WISHER_OPTIONS: { wisherId: AuthorId; label: string; Icon: typeof GiftIcon }[] = [
-  { wisherId: "dima", label: "Дима", Icon: GiftIcon },
-  { wisherId: "anya", label: "Аня", Icon: DreamIcon },
-];
+/** Член пары для радио-карточки «Чья мечта». */
+export interface WisherOption {
+  id: string;
+  name: string;
+  Icon: typeof GiftIcon;
+}
 
 /* ─── Хореография входа: мягко, без прыжков ─────────────────── */
 
@@ -49,16 +48,18 @@ const itemVariants = {
 };
 
 interface WishlistComposerProps {
+  /** Участники пары — радио-карточки «Чья мечта». */
+  wisherOptions: WisherOption[];
   /** Создаёт желание; возвращает false, если запись не сохранилась. */
-  onCreate: (input: NewWishInput) => boolean;
+  onCreate: (input: { title: string; description: string; wisherId: string }) => Promise<boolean>;
   onClose: () => void;
 }
 
-export function WishlistComposer({ onCreate, onClose }: WishlistComposerProps) {
+export function WishlistComposer({ wisherOptions, onCreate, onClose }: WishlistComposerProps) {
   const reduced = useReducedMotion();
   const { gender } = useGender();
 
-  const [wisherId, setWisherId] = useState<AuthorId>("dima");
+  const [wisherId, setWisherId] = useState<string>(wisherOptions[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | undefined>();
@@ -119,15 +120,19 @@ export function WishlistComposer({ onCreate, onClose }: WishlistComposerProps) {
   }, [onClose]);
 
   const submit = useCallback(
-    (event: React.FormEvent) => {
+    async (event: React.FormEvent) => {
       event.preventDefault();
       const t = title.trim();
       if (!t) {
         setError("Название обязательно — без него желание потеряется");
         return;
       }
+      if (!wisherId) {
+        setError("Выберите, чья это мечта");
+        return;
+      }
       setError(undefined);
-      const ok = onCreate({ wisherId, title: t, description });
+      const ok = await onCreate({ wisherId, title: t, description: description.trim() });
       if (!ok) {
         setError("Не получилось сохранить желание — попробуйте ещё раз");
         return;
@@ -208,18 +213,18 @@ export function WishlistComposer({ onCreate, onClose }: WishlistComposerProps) {
                   role="radiogroup"
                   aria-labelledby="wishlist-wisher-label"
                 >
-                  {WISHER_OPTIONS.map(({ wisherId: id, label, Icon }) => (
+                  {wisherOptions.map(({ id, name, Icon }) => (
                     <button
                       key={id}
                       type="button"
                       role="radio"
                       aria-checked={wisherId === id}
-                      aria-label={`Мечта ${label}`}
+                      aria-label={`Мечта ${name}`}
                       onClick={() => setWisherId(id)}
                       className={cn(styles.wisherBtn, wisherId === id && styles.wisherBtnActive)}
                     >
                       <Icon className={styles.wisherIcon} />
-                      <span>{label}</span>
+                      <span>{name}</span>
                     </button>
                   ))}
                 </div>

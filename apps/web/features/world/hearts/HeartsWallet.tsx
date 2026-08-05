@@ -14,8 +14,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useGender } from "@/lib/theme";
-import { findPersonByGender } from "@/features/world/profile/couple";
-import { useHearts } from "./useHearts";
+import { useHearts } from "@/lib/api-data";
 import { HeartsHistoryModal } from "./HeartsHistoryModal";
 import styles from "./HeartsWallet.module.css";
 
@@ -55,8 +54,9 @@ export function HeartsWallet() {
   const { gender } = useGender();
 
   // «Я» — владелец кошелька; его пол задаёт палитру виджета (data-gender).
-  const me = findPersonByGender(gender);
-  const { balance, history } = useHearts(me.id);
+  const { data: wallet } = useHearts();
+  const balance = wallet?.balance ?? 0;
+  const history = wallet?.history ?? [];
   const shown = useCountUp(balance);
 
   const [open, setOpen] = useState(false);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { formatMemoryDate, type Memory } from "@/lib/data/memories";
+import { formatMemoryDate, type Memory } from "./memoryModel";
 import { coverGradient, idRotation } from "./geometry";
 import styles from "./MemoryPolaroid.module.css";
 

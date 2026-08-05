@@ -4,9 +4,8 @@ import { useCallback, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import { findPersonByGender } from "@/features/world/profile/couple";
-import { GOAL_CONTRIBUTION, type CoupleGoal, type GoalKind } from "@/lib/data/goals";
-import { useGoals, goalProgress, type NewGoalInput } from "./useGoals";
+import { useCouple, useGoals } from "@/lib/api-data";
+import type { GoalKind, GoalView } from "@/lib/types";
 import { GoalComposer } from "./GoalComposer";
 import {
   CheckIcon,
@@ -43,11 +42,8 @@ const KIND_ICON: Record<GoalKind, (props: { className?: string }) => React.React
   celebration: SunsetIcon,
 };
 
-/** Русские имена участников — для строки «в копилке у каждого». */
-const PERSON_NAME: Record<string, string> = {
-  dima: "Дима",
-  anya: "Аня",
-};
+/** Фиксированный вклад за один клик — в общую копилку пары. */
+const GOAL_CONTRIBUTION = 500;
 
 /** Сумма по-русски с неразрывными пробелами: 37200 → «37 200». */
 function formatRubles(n: number): string {
@@ -57,8 +53,7 @@ function formatRubles(n: number): string {
 /**
  * Страница «Цели» — копилки пары в рублях.
  *
- * Цели живут в едином источнике данных (lib/data/goals.ts) + отклонениях
- * в localStorage (useGoals). Каждая цель — карточка с иконкой категории,
+ * Цели приходят с /goals (useGoals) — каждая карточка с иконкой категории,
  * прогресс-баром, вехами и суммой в копилке. Кнопка «В копилку» добавляет
  * фиксированную сумму (GOAL_CONTRIBUTION) в общий кошелёк — без списания
  * сердечек: копилка ведётся в настоящих деньгах, а не во внутренней валюте.
@@ -70,9 +65,12 @@ export function GoalsPage() {
   const reduced = useReducedMotion();
   const { gender } = useGender();
 
-  const me = findPersonByGender(gender);
-  const { goals, totalSaved, totalRemaining, contributions, contribute, create, remove } =
-    useGoals();
+  const { data: coupleData } = useCouple();
+  const viewerId = coupleData?.me.id;
+  const { data: goalsData, contribute, create, remove } = useGoals();
+  const goals = goalsData?.goals ?? [];
+  const totalSaved = goalsData?.totalSaved ?? 0;
+  const totalRemaining = goalsData?.totalRemaining ?? 0;
 
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -81,20 +79,21 @@ export function GoalsPage() {
 
   /** Вклад в копилку: кладёт GOAL_CONTRIBUTION рублей на общую цель. */
   const handleContribute = useCallback(
-    (goal: CoupleGoal): boolean => {
-      const saved = contribute(goal.id, me.id, GOAL_CONTRIBUTION);
-      if (!saved) return false;
+    async (goal: GoalView): Promise<boolean> => {
+      if (!viewerId) return false;
+      const ok = await contribute(goal.id, GOAL_CONTRIBUTION);
+      if (!ok) return false;
       setNotice(`${formatRubles(GOAL_CONTRIBUTION)} ₽ в копилке «${goal.title}»`);
       return true;
     },
-    [contribute, me.id],
+    [contribute, viewerId],
   );
 
   /** Создаёт новую цель и закрывает композер. */
   const handleCreate = useCallback(
-    (input: NewGoalInput): boolean => {
-      const id = create(input);
-      if (!id) return false;
+    async (input: { kind: GoalKind; title: string; target: number }): Promise<boolean> => {
+      const ok = await create(input);
+      if (!ok) return false;
       setComposing(false);
       setNotice(`Новая цель «${input.title}» в копилке`);
       return true;
@@ -103,8 +102,8 @@ export function GoalsPage() {
   );
 
   const handleRemove = useCallback(
-    (goal: CoupleGoal) => {
-      remove(goal.id);
+    async (goal: GoalView) => {
+      await remove(goal.id);
       setNotice(`Цель «${goal.title}» удалена`);
     },
     [remove],
@@ -210,8 +209,7 @@ export function GoalsPage() {
             <motion.li key={goal.id} layout variants={itemVariants} className={styles.gridItem}>
               <GoalCard
                 goal={goal}
-                meId={me.id}
-                contributions={contributions[goal.id] ?? []}
+                meId={viewerId}
                 onContribute={() => handleContribute(goal)}
                 onRemove={() => handleRemove(goal)}
               />
@@ -236,25 +234,25 @@ export function GoalsPage() {
 function GoalCard({
   goal,
   meId,
-  contributions,
   onContribute,
   onRemove,
 }: {
-  goal: CoupleGoal;
-  meId: string;
-  contributions: { personId: string; amount: number; at: string }[];
+  goal: GoalView;
+  /** id текущего пользователя — для строки «я: +N ₽». */
+  meId?: string;
   onContribute: () => void;
   onRemove: () => void;
 }) {
   const reduced = useReducedMotion();
-  const progress = goalProgress(goal);
+  const progress = goal.progress;
   const done = progress >= 100;
   const Icon = KIND_ICON[goal.kind] ?? PlaneIcon;
 
-  // Суммарные вклады участников: seed + из этой сессии.
-  const myContribution = contributions
-    .filter((c) => c.personId === meId)
-    .reduce((n, c) => n + c.amount, 0);
+  // Вклад текущего пользователя из истории вкладов цели.
+  const myContribution = (meId ? goal.contributions.filter((c) => c.userId === meId) : []).reduce(
+    (n, c) => n + c.amount,
+    0,
+  );
 
   const hasMilestones = goal.milestones.length > 0;
 
@@ -277,16 +275,14 @@ function GoalCard({
           ) : (
             <span className={styles.cardDeadline}>{goal.deadline}</span>
           )}
-          {goal.id.startsWith("goal-") && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className={styles.cardTrash}
-              aria-label={`Удалить цель «${goal.title}»`}
-            >
-              <TrashIcon className={styles.cardTrashIcon} />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onRemove}
+            className={styles.cardTrash}
+            aria-label={`Удалить цель «${goal.title}»`}
+          >
+            <TrashIcon className={styles.cardTrashIcon} />
+          </button>
         </div>
       </div>
 
@@ -338,18 +334,13 @@ function GoalCard({
       <div className={styles.cardFooter}>
         <div className={styles.contribLine}>
           <span className={styles.contribText}>
-            {Object.entries(goal.contributions)
-              .filter(([, amount]) => amount > 0)
-              .map(
-                ([personId, amount]) =>
-                  `${PERSON_NAME[personId] ?? personId} · ${formatRubles(amount)} ₽`,
-              )
+            {goal.contributions
+              .filter((c) => c.amount > 0)
+              .map((c) => `${c.name} · ${formatRubles(c.amount)} ₽`)
               .join("   ")}
           </span>
-          {myContribution > 0 && (
-            <span className={styles.contribMine}>
-              я: +{formatRubles(myContribution)} ₽
-            </span>
+          {meId && myContribution > 0 && (
+            <span className={styles.contribMine}>я: +{formatRubles(myContribution)} ₽</span>
           )}
         </div>
 

@@ -1,4 +1,7 @@
-import { worldStatus, type WorldIcon } from "@/lib/data/worldStatus";
+"use client";
+
+import { useWorld } from "@/lib/api-data";
+import type { WorldIcon } from "@/lib/types";
 import {
   MemoryIcon,
   MoodIcon,
@@ -26,6 +29,9 @@ const EVENT_ICON: Record<WorldIcon, (props: { className?: string }) => React.Rea
 // The narrative spine below the orbit: the last shared moments as a single
 // wide card. Keeps the world from feeling like just a dashboard.
 export function RecentHistory() {
+  const { data: world } = useWorld();
+  const history = world?.history ?? [];
+
   return (
     <section
       aria-labelledby="recent-history-title"
@@ -48,7 +54,7 @@ export function RecentHistory() {
       </div>
 
       <ul className="mt-4 divide-y divide-[color-mix(in_srgb,var(--hwd-ink-soft)_14%,transparent)]">
-        {worldStatus.history.map((event, index) => {
+        {history.map((event, index) => {
           const Icon = EVENT_ICON[event.icon] ?? StarIcon;
           return (
             <li key={index} className="flex items-center gap-3 py-3">

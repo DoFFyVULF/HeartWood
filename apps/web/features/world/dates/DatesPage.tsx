@@ -1,36 +1,81 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useMemo } from "react";
 import { DateStats } from "./DateStats";
 import { LetterComposer, type LetterData } from "./LetterComposer";
-import { datesStatus, type EnvelopeOption } from "@/lib/data/datesStatus";
-import { generateId } from "@/lib/сonstants";
+import { envelopeOptions, type EnvelopeOption } from "./envelope";
+import { useDates, useCouple, useLetters } from "@/lib/api-data";
 import styles from "./DatesPage.module.css";
 
-interface SentLetter extends LetterData {
-  id: string;
-  sentAt: Date;
-}
-
 function sealEmoji(key: string): string {
-  const opts = (datesStatus.envelopeCustomizations.find((c) => c.key === "seal")
-    ?.options ?? []) as EnvelopeOption[];
+  const opts = envelopeOptions("seal") as EnvelopeOption[];
   return opts.find((o) => o.key === key)?.emoji ?? "💌";
 }
 
 /** Иконки для quick-stats — чтобы пилюли выглядели «живыми». */
 const QUICK_STAT_ICONS: Record<string, string> = {
   "свиданий": "💕",
-  "в этом месяце": "📅",
-  "в планах": "✨",
+  "часов вместе": "⏱️",
+  "приглашений": "💌",
 };
 
-export function DatesPage() {
-  const [sent, setSent] = useState<SentLetter[]>([]);
+/** Грустная плашка, пока вторая половинка не вступила по коду. */
+function NoPartnerCard() {
+  return (
+    <div className={styles.noPartnerCard}>
+      <span className={styles.noPartnerEmoji} aria-hidden>
+        🥺
+      </span>
+      <h2 className={styles.noPartnerTitle}>Половинка ещё не рядом</h2>
+      <p className={styles.noPartnerText}>
+        Когда она вступит по коду — письма и приглашения заработают.
+      </p>
+    </div>
+  );
+}
 
-  const handleSend = useCallback((data: LetterData) => {
-    setSent((prev) => [...prev, { ...data, id: generateId("inv"), sentAt: new Date() }]);
-  }, []);
+export function DatesPage() {
+  const { data } = useDates();
+  const couple = useCouple().data;
+  const letters = useLetters();
+
+  // Половинка привязана, если в паре два участника. Пока её нет — студия
+  // письма и история скрыты, вместо них грустная плашка.
+  const hasPartner = (couple?.couple.members.length ?? 0) >= 2;
+
+  // «Отправленные письма» — это исходящие (incoming=false) из почты пары.
+  const sent = useMemo(
+    () =>
+      (letters.data ?? [])
+        .filter((l) => !l.incoming)
+        .map((l) => ({
+          id: l.id,
+          to: l.recipient.name,
+          from: l.sender.name,
+          message: l.message,
+          ps: l.ps ?? "",
+          paper: l.paper,
+          seal: l.seal,
+          stamp: l.stamp,
+          sentAt: new Date(l.createdAt),
+        })),
+    [letters.data],
+  );
+
+  // Отправка через API: письмо улетает в почту партнёра, кэш обновляется.
+  const handleSend = async (_data: LetterData): Promise<boolean> => {
+    return letters.send({
+      message: _data.message,
+      ps: _data.ps || undefined,
+      paper: _data.paper,
+      seal: _data.seal,
+      stamp: _data.stamp,
+    });
+  };
+
+  const invited = data
+    ? Object.values(data.inviteScore).reduce((a, b) => a + b, 0)
+    : 0;
 
   return (
     <div className={styles.page}>
@@ -57,9 +102,9 @@ export function DatesPage() {
             style={{ animationDelay: "0.2s" }}
           >
             {[
-              { value: "23", label: "свиданий" },
-              { value: "2",  label: "в этом месяце" },
-              { value: "1",  label: "в планах" },
+              { value: data ? String(data.total) : "—", label: "свиданий" },
+              { value: data ? String(data.hoursTogether) : "—", label: "часов вместе" },
+              { value: data ? String(invited) : "—", label: "приглашений" },
             ].map((s) => (
               <span key={s.label} className={styles.quickStat}>
                 <span className={styles.quickStatIcon} aria-hidden>
@@ -86,17 +131,21 @@ export function DatesPage() {
         <DateStats />
       </section>
 
-      {/* Письмо */}
-      <section
-        className={`${styles.composerSection} ${styles.entranceRise}`}
-        style={{ animationDelay: "0.3s" }}
-        aria-label="Студия письма"
-      >
-        <LetterComposer onSend={handleSend} />
-      </section>
+      {/* Письмо. Пока половинки нет — грустная плашка вместо студии. */}
+      {!hasPartner ? (
+        <NoPartnerCard />
+      ) : (
+        <section
+          className={`${styles.composerSection} ${styles.entranceRise}`}
+          style={{ animationDelay: "0.3s" }}
+          aria-label="Студия письма"
+        >
+          <LetterComposer onSend={handleSend} />
+        </section>
+      )}
 
       {/* History */}
-      {sent.length > 0 && (
+      {hasPartner && sent.length > 0 && (
         <section className={styles.entranceRise} aria-label="Отправленные приглашения">
           <h2 className={styles.historyTitle}>
             <span className={styles.historyTitleIcon} aria-hidden>📬</span>

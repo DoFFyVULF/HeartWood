@@ -6,21 +6,20 @@
 // одна мягкая тень, всё из токенов темы (--hwd-*).
 
 import {
-  AUTHOR_NAMES,
   countdownLabel,
   eventsOnDate,
   formatFullDate,
   parseISO,
   pluralRu,
   yearsSince,
-  type CoupleEvent,
   type UpcomingOccurrence,
-} from "@/lib/data/events";
+} from "@/lib/dateUtils";
+import type { EventView } from "@/lib/types";
 import { CalendarIcon, KIND_ICON, PlusIcon, StarIcon, TrashIcon } from "./icons";
 import styles from "./DayPanel.module.css";
 
 interface DayPanelProps {
-  events: CoupleEvent[];
+  events: EventView[];
   /** «сейчас» — разрешённая клиентская дата. */
   now: Date;
   /** Выбранный день (ISO) или null до клиентской гидрации. */
@@ -29,7 +28,7 @@ interface DayPanelProps {
   upcoming: UpcomingOccurrence[];
   /** Добавить дату на выбранный день. */
   onAddDate: (iso: string) => void;
-  onRemove: (event: CoupleEvent) => void;
+  onRemove: (event: EventView) => void;
 }
 
 export function DayPanel({ events, now, selected, upcoming, onAddDate, onRemove }: DayPanelProps) {
@@ -62,7 +61,7 @@ export function DayPanel({ events, now, selected, upcoming, onAddDate, onRemove 
                       : event.kind === "anniversary"
                         ? "Годовщина"
                         : event.createdBy
-                          ? `Добавил${event.createdBy === "anya" ? "а" : ""} ${AUTHOR_NAMES[event.createdBy]}`
+                          ? `Добавил${event.createdBy.name.endsWith("а") ? "а" : ""} ${event.createdBy.name}`
                           : null;
                   return (
                     <li key={event.id} className={styles.row}>
@@ -73,7 +72,7 @@ export function DayPanel({ events, now, selected, upcoming, onAddDate, onRemove 
                         <span className={styles.rowTitle}>{event.title}</span>
                         {subtitle && <span className={styles.rowSub}>{subtitle}</span>}
                       </span>
-                      {event.id.startsWith("evt-") && (
+                      {event.createdBy && (
                         <button
                           type="button"
                           onClick={() => onRemove(event)}
@@ -165,7 +164,7 @@ export function DayPanel({ events, now, selected, upcoming, onAddDate, onRemove 
 }
 
 /** Вехи из истории — по убыванию даты. */
-function milestones(events: CoupleEvent[]): CoupleEvent[] {
+function milestones(events: EventView[]): EventView[] {
   return events
     .filter((e) => e.kind === "milestone")
     .sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());

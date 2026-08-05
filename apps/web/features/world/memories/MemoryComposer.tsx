@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import { MEMORY_EMOJIS, type Memory } from "@/lib/data/memories";
+import { MEMORY_EMOJIS, type MemoryMedia } from "./memoryModel";
 import { compressImage } from "./mediaUtils";
 import { putMedia } from "./mediaStore";
 import { CameraIcon, CloseIcon, HeartIcon } from "./icons";
@@ -16,14 +16,14 @@ export interface MemoryDraft {
   date: string;
   story?: string;
   cover?: string;
-  media: Memory["media"];
+  media: MemoryMedia[];
 }
 
 interface MemoryComposerProps {
   open: boolean;
   onClose: () => void;
-  /** Возвращает false, если сохранить не удалось (квота и т.п.). */
-  onSave: (draft: MemoryDraft) => boolean;
+  /** Возвращает false, если сохранить не удалось. */
+  onSave: (draft: MemoryDraft) => Promise<boolean>;
 }
 
 /* ─── Хореография входа: мягко, без прыжков ─────────────────── */
@@ -63,7 +63,7 @@ export function MemoryComposer({ open, onClose, onSave }: MemoryComposerProps) {
   const [date, setDate] = useState("");
   const [story, setStory] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [coverMedia, setCoverMedia] = useState<Memory["media"]>([]);
+  const [coverMedia, setCoverMedia] = useState<MemoryMedia[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -167,13 +167,14 @@ export function MemoryComposer({ open, onClose, onSave }: MemoryComposerProps) {
     }
   }
 
-  function submit() {
+  async function submit() {
     const cleanTitle = title.trim();
     if (!cleanTitle) {
       setError("Придумай название — без него полароид пустой");
       return;
     }
-    const ok = onSave({
+    setBusy(true);
+    const ok = await onSave({
       title: cleanTitle,
       emoji,
       date,
@@ -181,7 +182,8 @@ export function MemoryComposer({ open, onClose, onSave }: MemoryComposerProps) {
       cover: coverPreview ?? undefined,
       media: coverMedia,
     });
-    if (!ok) return; // onSave уже показал причину (квота)
+    setBusy(false);
+    if (!ok) return; // onSave уже показал причину
     onClose();
   }
 

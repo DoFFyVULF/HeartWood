@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { MOODS } from "@/lib/data/moods";
+import { MOODS } from "@/lib/moods";
 import { useMood } from "@/lib/mood";
 
 /**

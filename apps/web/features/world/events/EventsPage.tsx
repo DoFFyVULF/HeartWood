@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useGender } from "@/lib/theme";
-import { findPersonByGender } from "@/features/world/profile/couple";
 import {
-  type CoupleEvent,
   countdownLabel,
   daysUntil,
   formatDayNumber,
@@ -13,8 +10,9 @@ import {
   formatMonthShort,
   toISODate,
   upcomingOccurrences,
-} from "@/lib/data/events";
-import { useEvents, toAuthorId, type NewEventInput } from "./useEvents";
+} from "@/lib/dateUtils";
+import { useEvents } from "@/lib/api-data";
+import type { EventView } from "@/lib/types";
 import { EventComposer } from "./EventComposer";
 import { CalendarGrid } from "./CalendarGrid";
 import { DayPanel } from "./DayPanel";
@@ -41,10 +39,8 @@ const KIND_ICON: Record<string, (props: { className?: string }) => React.ReactEl
  * тень. Вся гамма — из токенов темы (--hwd-*), перекрашивается по гендеру.
  */
 export function EventsPage() {
-  const { gender } = useGender();
-
-  const me = findPersonByGender(gender);
-  const { events, create, remove } = useEvents();
+  const { data: eventsData, create, remove } = useEvents();
+  const events = eventsData ?? [];
 
   const [today, setToday] = useState<Date | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -80,20 +76,23 @@ export function EventsPage() {
 
   /** Добавляет событие и закрывает композер. */
   const handleCreate = useCallback(
-    (input: NewEventInput): boolean => {
-      const author = toAuthorId(me.id) ?? "dima";
-      const id = create(input, author);
-      if (!id) return false;
+    async (input: {
+      kind: "date" | "anniversary" | "milestone";
+      title: string;
+      date: string;
+    }): Promise<boolean> => {
+      const ok = await create(input);
+      if (!ok) return false;
       setComposing(false);
       setNotice(`Дата «${input.title}» в календаре`);
       return true;
     },
-    [create, me.id],
+    [create],
   );
 
   const handleRemove = useCallback(
-    (event: CoupleEvent) => {
-      remove(event.id);
+    async (event: EventView) => {
+      await remove(event.id);
       setNotice(`Дата «${event.title}» удалена`);
     },
     [remove],
@@ -233,7 +232,7 @@ function NextHero({
   next,
   now,
 }: {
-  event: CoupleEvent;
+  event: EventView;
   next: Date;
   now: Date;
 }) {

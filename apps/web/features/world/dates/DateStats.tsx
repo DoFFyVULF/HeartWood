@@ -1,14 +1,81 @@
 "use client";
 
-import { datesStatus } from "@/lib/data/datesStatus";
+import { useDates } from "@/lib/api-data";
 import { cn } from "@/lib/utils";
 import styles from "./DateStats.module.css";
 
+/** Одна стеклянная карточка статистики. */
+interface DatesStat {
+  emoji: string;
+  value: string;
+  label: string;
+  detail?: string;
+}
+
+/**
+ * Строит карточки статистики из агрегата /dates: счётчики, любимое место,
+ * средняя оценка, рекорд серии и топ-форматы.
+ */
+function buildStats(dates: {
+  total: number;
+  inviteScore: Record<string, number>;
+  hoursTogether: number;
+  bestStreak: number;
+  averageRating: string;
+  favoriteSpot: string | null;
+  topTypes: Array<{ emoji: string; label: string; count: number }>;
+}): DatesStat[] {
+  const invited = Object.values(dates.inviteScore).reduce((a, b) => a + b, 0);
+  const stats: DatesStat[] = [
+    {
+      emoji: "📅",
+      value: String(dates.total),
+      label: "Свиданий всего",
+      detail: dates.total ? "Встречи, которые уже случились" : undefined,
+    },
+    {
+      emoji: "💌",
+      value: String(invited),
+      label: "Приглашений отправлено",
+    },
+    {
+      emoji: "⏱️",
+      value: String(dates.hoursTogether),
+      label: "Часов вместе",
+      detail: "И каждая минута — драгоценна",
+    },
+    {
+      emoji: "🔥",
+      value: String(dates.bestStreak),
+      label: "Рекорд подряд",
+    },
+  ];
+
+  if (dates.averageRating !== "—") {
+    stats.push({ emoji: "💯", value: dates.averageRating, label: "Средняя оценка" });
+  }
+
+  // Любимое место — только если оно есть в истории.
+  if (dates.favoriteSpot) {
+    stats.push({ emoji: "📍", value: dates.favoriteSpot, label: "Любимое место" });
+  }
+
+  // Топ-форматы — до двух карточек.
+  for (const t of dates.topTypes.slice(0, 2)) {
+    stats.push({ emoji: t.emoji, value: String(t.count), label: t.label });
+  }
+
+  return stats;
+}
+
 /**
  * Статистика свиданий — стеклянные карточки с каскадной анимацией.
- * Контент виден без JS (чистый CSS entrance).
+ * Данные приходят с /dates (useDates); пока они грузятся, секция пустая.
  */
 export function DateStats() {
+  const { data } = useDates();
+  const stats = data ? buildStats(data) : [];
+
   return (
     <section aria-labelledby="dates-stats-title" className={styles.section}>
       <h2 id="dates-stats-title" className="sr-only">
@@ -17,7 +84,7 @@ export function DateStats() {
 
       {/* ← FIX: dl/dt/dd — валидный HTML */}
       <dl className={styles.grid}>
-        {datesStatus.stats.map((stat, index) => (
+        {stats.map((stat, index) => (
           <div
             key={stat.label}
             className={cn(

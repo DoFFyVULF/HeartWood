@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { Memory, MemoryMedia } from "@/lib/data/memories";
+import type { Memory, MemoryMedia } from "./memoryModel";
 import { compressImage, fileKind, videoFileOk } from "./mediaUtils";
 import { deleteMedia, getMedia, putMedia } from "./mediaStore";
 import { AlertIcon, CameraIcon, CloseIcon } from "./icons";

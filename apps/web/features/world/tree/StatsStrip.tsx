@@ -1,4 +1,7 @@
-import { worldStatus, type WorldIcon } from "@/lib/data/worldStatus";
+"use client";
+
+import { useWorld } from "@/lib/api-data";
+import type { WorldIcon } from "@/lib/types";
 import {
   MemoryIcon,
   MoodIcon,
@@ -24,9 +27,12 @@ const STAT_ICON: Record<WorldIcon, (props: { className?: string }) => React.Reac
 
 // A slim, scannable summary of the couple's bond — no new cards, just one line.
 export function StatsStrip() {
+  const { data: world } = useWorld();
+  const stats = world?.stats ?? [];
+
   return (
     <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {worldStatus.stats.map((stat) => {
+      {stats.map((stat) => {
         const Icon = STAT_ICON[stat.icon] ?? StarIcon;
         return (
           <div

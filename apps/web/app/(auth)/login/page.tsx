@@ -4,19 +4,23 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { Field } from "@/components/ui/Field";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { SuccessPanel } from "@/components/ui/SuccessPanel";
 import { ForgotPasswordDialog } from "@/components/ui/ForgotPasswordDialog";
+import { useAuth } from "@/lib/auth";
+import { ApiError } from "@/lib/api";
 import { routes } from "@/routes";
 import { isEmail } from "@/features/auth/validation";
 
 type Errors = Partial<Record<"email" | "password", string>>;
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<Errors>({});
   const [touched, setTouched] = useState(false);
-  const [status, setStatus] = useState<"idle" | "submitting" | "success">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting">("idle");
+  const [serverError, setServerError] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
   const closeForgot = useCallback(() => setForgotOpen(false), []);
 
@@ -28,25 +32,21 @@ export default function LoginPage() {
     return Object.keys(next).length === 0;
   }
 
-  function onSubmit(event: React.FormEvent) {
+  async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setTouched(true);
     if (!validate()) return;
+    setServerError(null);
     setStatus("submitting");
-    // Stand-in for a real API call — the backend is wired up separately.
-    window.setTimeout(() => setStatus("success"), 1100);
-  }
-
-  if (status === "success") {
-    return (
-      <SuccessPanel
-        emoji="💛"
-        title="С возвращением!"
-        subtitle="Ваше дерево чуть подросло, пока вас не было 🌱"
-        primary={{ label: "Войти в ваш мир →", href: routes.home.path }}
-        secondary={{ label: "Создать новый аккаунт", href: routes.register.path }}
-      />
-    );
+    try {
+      // После успеха guard RedirectIfAuthed сам уводит в мир (/).
+      await login(email, password, remember);
+    } catch (err) {
+      setServerError(
+        err instanceof ApiError ? err.message : "Что-то пошло не так — попробуйте ещё раз",
+      );
+      setStatus("idle");
+    }
   }
 
   return (
@@ -89,7 +89,8 @@ export default function LoginPage() {
           <label className="flex cursor-pointer items-center gap-1.5 text-(--hwd-ink-soft)">
             <input
               type="checkbox"
-              defaultChecked
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
               className="size-4 rounded accent-[var(--hwd-primary)]"
             />
             Запомнить меня
@@ -102,6 +103,12 @@ export default function LoginPage() {
             Забыли пароль?
           </button>
         </div>
+
+        {serverError && (
+          <p role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-500">
+            {serverError}
+          </p>
+        )}
 
         <SubmitButton loading={status === "submitting"}>Войти в мир →</SubmitButton>
       </form>

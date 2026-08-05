@@ -19,10 +19,9 @@ import { useCallback, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import { findPersonByGender } from "@/features/world/profile/couple";
-import { pluralRu } from "@/lib/data/events";
-import { statusOf, type AuthorId, type Wish, type WishStatus } from "@/lib/data/wishlist";
-import { useWishlist, toAuthorId, type NewWishInput } from "./useWishlist";
+import { pluralRu } from "@/lib/dateUtils";
+import { useCouple, useWishlist } from "@/lib/api-data";
+import type { WishView } from "@/lib/types";
 import { WishlistComposer } from "./WishlistComposer";
 import {
   BoxIcon,
@@ -51,17 +50,19 @@ const itemVariants = {
   },
 };
 
+/** Статус желания: в списке / в работе / подарено. */
+type WishStatus = "open" | "claimed" | "fulfilled";
+
+function statusOf(w: WishView): WishStatus {
+  if (w.fulfilled) return "fulfilled";
+  return w.claimer ? "claimed" : "open";
+}
+
 /** Иконка статуса желания. */
 const STATUS_ICON: Record<WishStatus, (props: { className?: string }) => React.ReactElement> = {
   open: DreamIcon,
   claimed: BoxIcon,
   fulfilled: CheckIcon,
-};
-
-/** Русские имена участников — для подписей «Мечта Димы» / «Добавила Аня». */
-const PERSON_NAME: Record<string, string> = {
-  dima: "Дима",
-  anya: "Аня",
 };
 
 /**
@@ -71,19 +72,22 @@ export function WishlistPage() {
   const reduced = useReducedMotion();
   const { gender } = useGender();
 
-  const me = findPersonByGender(gender);
-  const meId = toAuthorId(me.id) ?? "dima";
+  const { data: coupleData } = useCouple();
+  const meId = coupleData?.me.id;
+  const members = coupleData?.couple.members ?? [];
+  const partner = members.find((m) => m.id !== meId);
 
-  const { wishes, add, claim, unclaim, fulfill, remove } = useWishlist();
+  const { data: wishesData, add, claim, unclaim, fulfill, remove } = useWishlist();
+  const wishes = wishesData ?? [];
 
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Три раздела — по статусу желания.
   const sections = useMemo(() => {
-    const open: Wish[] = [];
-    const claimed: Wish[] = [];
-    const fulfilled: Wish[] = [];
+    const open: WishView[] = [];
+    const claimed: WishView[] = [];
+    const fulfilled: WishView[] = [];
     for (const w of wishes) {
       const s = statusOf(w);
       if (s === "open") open.push(w);
@@ -95,46 +99,50 @@ export function WishlistPage() {
 
   /** Добавляет желание и закрывает композер. */
   const handleCreate = useCallback(
-    (input: NewWishInput): boolean => {
-      const id = add(input, meId);
-      if (!id) return false;
+    async (input: { title: string; description: string; wisherId: string }): Promise<boolean> => {
+      const created = await add(input);
+      if (!created) return false;
       setComposing(false);
       setNotice(`Мечта «${input.title}» в списке`);
       return true;
     },
-    [add, meId],
+    [add],
   );
 
   const handleClaim = useCallback(
-    (wish: Wish) => {
-      if (!claim(wish.id, meId)) return;
+    async (wish: WishView) => {
+      const ok = await claim(wish.id);
+      if (!ok) return;
       setNotice(`«${wish.title}» — ты даришь, и это секрет`);
     },
-    [claim, meId],
+    [claim],
   );
 
   const handleUnclaim = useCallback(
-    (wish: Wish) => {
-      if (!unclaim(wish.id, meId)) return;
+    async (wish: WishView) => {
+      const ok = await unclaim(wish.id);
+      if (!ok) return;
       setNotice(`«${wish.title}» вернулось в список`);
     },
-    [unclaim, meId],
+    [unclaim],
   );
 
   const handleFulfill = useCallback(
-    (wish: Wish) => {
-      if (!fulfill(wish.id, meId)) return;
+    async (wish: WishView) => {
+      const ok = await fulfill(wish.id);
+      if (!ok) return;
       setNotice(`«${wish.title}» исполнено — вы чудо`);
     },
-    [fulfill, meId],
+    [fulfill],
   );
 
   const handleRemove = useCallback(
-    (wish: Wish) => {
-      if (!remove(wish.id, meId)) return;
+    async (wish: WishView) => {
+      const ok = await remove(wish.id);
+      if (!ok) return;
       setNotice(`«${wish.title}» убрано из списка`);
     },
-    [remove, meId],
+    [remove],
   );
 
   return (
@@ -202,7 +210,15 @@ export function WishlistPage() {
       </header>
 
       {/* Герой-подсказка: предлагает взять мечту партнёра в подарок */}
-      <GiftHero wishes={wishes} meId={meId} reduced={reduced} onClaim={handleClaim} />
+      {meId && (
+        <GiftHero
+          wishes={wishes}
+          meId={meId}
+          partnerName={partner?.name ?? "половинка"}
+          reduced={reduced}
+          onClaim={handleClaim}
+        />
+      )}
 
       {/* Кнопка новой мечты */}
       <div className={styles.toolbar}>
@@ -243,7 +259,7 @@ export function WishlistPage() {
             <motion.li key={wish.id} layout variants={itemVariants} className={styles.gridItem}>
               <WishCard
                 wish={wish}
-                meId={meId}
+                meId={meId ?? ""}
                 reduced={reduced}
                 onClaim={handleClaim}
                 onUnclaim={handleUnclaim}
@@ -273,7 +289,7 @@ export function WishlistPage() {
             <motion.li key={wish.id} layout variants={itemVariants} className={styles.gridItem}>
               <WishCard
                 wish={wish}
-                meId={meId}
+                meId={meId ?? ""}
                 reduced={reduced}
                 onClaim={handleClaim}
                 onUnclaim={handleUnclaim}
@@ -303,7 +319,7 @@ export function WishlistPage() {
             <motion.li key={wish.id} layout variants={itemVariants} className={styles.gridItem}>
               <WishCard
                 wish={wish}
-                meId={meId}
+                meId={meId ?? ""}
                 reduced={reduced}
                 onClaim={handleClaim}
                 onUnclaim={handleUnclaim}
@@ -322,10 +338,23 @@ export function WishlistPage() {
 
       {/* Новая мечта */}
       {composing && (
-        <WishlistComposer onCreate={handleCreate} onClose={() => setComposing(false)} />
+        <WishlistComposer
+          wisherOptions={wisherOptions(members)}
+          onCreate={handleCreate}
+          onClose={() => setComposing(false)}
+        />
       )}
     </div>
   );
+}
+
+/** Радио-карточки «Чья мечта» из участников пары (иконки чередуются). */
+function wisherOptions(members: Array<{ id: string; name: string }>) {
+  return members.map((m, i) => ({
+    id: m.id,
+    name: m.name,
+    Icon: i % 2 === 0 ? GiftIcon : DreamIcon,
+  }));
 }
 
 /** Раздел с заголовком, счётчиком и пустым состоянием. */
@@ -363,25 +392,25 @@ function Section({
 function GiftHero({
   wishes,
   meId,
+  partnerName,
   reduced,
   onClaim,
 }: {
-  wishes: Wish[];
-  meId: AuthorId;
+  wishes: WishView[];
+  meId: string;
+  partnerName: string;
   reduced: boolean | null;
-  onClaim: (w: Wish) => void;
+  onClaim: (w: WishView) => void;
 }) {
   const partnerWish = useMemo(
-    () => wishes.find((w) => statusOf(w) === "open" && w.wisherId !== meId) ?? null,
+    () => wishes.find((w) => statusOf(w) === "open" && w.wisher.id !== meId) ?? null,
     [wishes, meId],
   );
   const myOpen = useMemo(
-    () => wishes.find((w) => statusOf(w) === "open" && w.wisherId === meId) ?? null,
+    () => wishes.find((w) => statusOf(w) === "open" && w.wisher.id === meId) ?? null,
     [wishes, meId],
   );
   const allDone = !partnerWish && !myOpen;
-
-  const partnerName = meId === "dima" ? "Аня" : "Дима";
 
   return (
     <div className={styles.hero} role="group" aria-label="Подсказка">
@@ -450,26 +479,26 @@ function WishCard({
   onFulfill,
   onRemove,
 }: {
-  wish: Wish;
-  meId: AuthorId;
+  wish: WishView;
+  meId: string;
   reduced: boolean | null;
-  onClaim: (w: Wish) => void;
-  onUnclaim: (w: Wish) => void;
-  onFulfill: (w: Wish) => void;
-  onRemove: (w: Wish) => void;
+  onClaim: (w: WishView) => void;
+  onUnclaim: (w: WishView) => void;
+  onFulfill: (w: WishView) => void;
+  onRemove: (w: WishView) => void;
 }) {
   const status = statusOf(wish);
   const Icon = STATUS_ICON[status];
-  const isWisher = wish.wisherId === meId;
-  const isClaimer = wish.claimerId === meId;
-  const wisherName = PERSON_NAME[wish.wisherId] ?? wish.wisherId;
+  const isWisher = wish.wisher.id === meId;
+  const isClaimer = wish.claimer?.id === meId;
+  const wisherName = wish.wisher.name;
 
-  // Удалять можно только своё пользовательское желание (seed-мечты целы).
-  const canDelete = wish.id.startsWith("wsh-") && (wish.createdBy === meId || isWisher);
+  // Удалять можно своё желание — создатель или мечтатель (сервер проверит).
+  const canDelete = (wish.createdBy?.id === meId || isWisher) && !wish.fulfilled;
 
-  // Кто добавил желание (только для пользовательских).
+  // Кто добавил желание.
   const who = wish.createdBy
-    ? `Добавил${wish.createdBy === "anya" ? "а" : ""} ${PERSON_NAME[wish.createdBy] ?? wish.createdBy}`
+    ? `Добавил${wish.createdBy.name.endsWith("а") ? "а" : ""} ${wish.createdBy.name}`
     : null;
 
   // Бейдж статуса. У заклеймившего — «Ты даришь», у мечтателя имя скрыто.

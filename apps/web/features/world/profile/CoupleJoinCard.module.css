@@ -1,0 +1,225 @@
+/* Карточка «Вторая половинка ещё не здесь». Живёт внутри .screen[data-gender]
+   профиля и читает локальные CSS-переменные темы (--hwd-*). Тот же язык, что
+   у остальных карточек профиля: белая полупрозрачная подложка, blur, мягкая
+   тень, скругления 999px у кнопок. */
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 460px);
+  margin: 28px auto 0;
+  padding: 22px 22px 18px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 18px 44px -20px rgba(30, 27, 60, 0.28);
+  backdrop-filter: blur(14px);
+  transition: color 0.5s ease, background 0.5s ease;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.heart {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  font-size: 1.15rem;
+  background: var(--hwd-primary-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 18%, transparent);
+  transition: background 0.5s ease;
+}
+
+.title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--hwd-ink);
+  transition: color 0.5s ease;
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--hwd-ink-soft);
+  transition: color 0.5s ease;
+}
+
+/* ─── Путь 1 · мой код ─── */
+.invite {
+  margin-top: 18px;
+}
+
+.inviteLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hwd-ink-soft);
+  transition: color 0.5s ease;
+}
+
+.codeRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.code {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--hwd-primary-deep);
+  background: var(--hwd-primary-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hwd-primary) 22%, transparent);
+  transition: color 0.5s ease, background 0.5s ease;
+}
+
+.copyBtn {
+  flex-shrink: 0;
+  padding: 11px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--hwd-primary);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hwd-primary) 60%, transparent);
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.copyBtn:hover {
+  transform: translateY(-1px);
+}
+
+.copyBtn:focus-visible {
+  outline: 3px solid var(--hwd-glow);
+  outline-offset: 2px;
+}
+
+.copyBtnCopied {
+  background: var(--hwd-primary-deep);
+}
+
+/* ─── Разделитель ─── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hwd-ink-soft);
+  transition: color 0.5s ease;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--hwd-ink) 14%, transparent);
+}
+
+/* ─── Путь 2 · чужой код ─── */
+.joinForm {
+  margin-top: 2px;
+}
+
+.joinLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hwd-ink-soft);
+  transition: color 0.5s ease;
+}
+
+.joinRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hwd-ink);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid color-mix(in srgb, var(--hwd-ink) 18%, transparent);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input::placeholder {
+  color: color-mix(in srgb, var(--hwd-ink-soft) 60%, transparent);
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--hwd-primary);
+  box-shadow: 0 0 0 3px var(--hwd-glow);
+}
+
+.joinBtn {
+  flex-shrink: 0;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--hwd-primary);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hwd-primary) 60%, transparent);
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.15s ease, opacity 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.joinBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.joinBtn:focus-visible {
+  outline: 3px solid var(--hwd-glow);
+  outline-offset: 2px;
+}
+
+.joinBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.error {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #dc2626;
+}

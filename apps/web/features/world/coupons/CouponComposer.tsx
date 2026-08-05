@@ -15,7 +15,6 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import type { NewCouponInput } from "./useCoupons";
 import { HeartIcon, PlusIcon } from "./icons";
 import styles from "./CouponComposer.module.css";
 
@@ -26,8 +25,13 @@ const EMOJI_PRESETS = ["💆", "🍳", "🎬", "☕", "🎁", "💌", "🌷", "�
 const PRICE_PRESETS = [5, 10, 15, 25, 50];
 
 interface CouponComposerProps {
-  /** Создаёт черновик; возвращает null, если запись не сохранилась. */
-  onCreate: (input: NewCouponInput) => boolean;
+  /** Создаёт черновик; возвращает false, если запись не сохранилась. */
+  onCreate: (input: {
+    emoji: string;
+    title: string;
+    description: string;
+    price: number;
+  }) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -119,7 +123,7 @@ export function CouponComposer({ onCreate, onClose }: CouponComposerProps) {
   }, [onClose]);
 
   const submit = useCallback(
-    (event: React.FormEvent) => {
+    async (event: React.FormEvent) => {
       event.preventDefault();
       const t = title.trim();
       if (!t) {
@@ -131,7 +135,7 @@ export function CouponComposer({ onCreate, onClose }: CouponComposerProps) {
         return;
       }
       setError(undefined);
-      const ok = onCreate({
+      const ok = await onCreate({
         emoji,
         title: t,
         description: description.trim(),

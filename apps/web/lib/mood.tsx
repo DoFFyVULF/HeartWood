@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useSyncExternalStore } from "react";
-import { findMood, type MoodOption } from "@/lib/data/moods";
+import { findMood, type MoodOption } from "@/lib/moods";
 
 interface MoodContextValue {
   /**

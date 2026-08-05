@@ -12,16 +12,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useGender } from "@/lib/theme";
-import { findPerson } from "@/features/world/profile/couple";
-import type { AuthorId, Coupon } from "@/lib/data/coupons";
+import type { CouponView } from "@/lib/types";
 import { HeartIcon, PlaneIcon } from "./icons";
 import styles from "./CouponSendDialog.module.css";
 
 interface CouponSendDialogProps {
-  coupon: Coupon;
-  to: AuthorId;
+  coupon: CouponView;
   /** Отправляет черновик; true, если отправка произошла. */
-  onSend: () => boolean;
+  onSend: () => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -60,7 +58,7 @@ const planeVariants = {
   },
 };
 
-export function CouponSendDialog({ coupon, to, onSend, onClose }: CouponSendDialogProps) {
+export function CouponSendDialog({ coupon, onSend, onClose }: CouponSendDialogProps) {
   const reduced = useReducedMotion();
   const { gender } = useGender();
   const [phase, setPhase] = useState<"confirm" | "success">("confirm");
@@ -72,7 +70,8 @@ export function CouponSendDialog({ coupon, to, onSend, onClose }: CouponSendDial
     phaseRef.current = phase;
   }, [phase]);
 
-  const recipient = findPerson(to);
+  // Получатель — партнёр, которому уходит черновик (имя из купона).
+  const recipientName = coupon.recipient?.name ?? "партнёр";
 
   // Фокус-трап, Escape закрывает только в фазе confirm, блокировка скролла,
   // возврат фокуса к триггеру при размонтировании.
@@ -142,9 +141,9 @@ export function CouponSendDialog({ coupon, to, onSend, onClose }: CouponSendDial
     [],
   );
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     if (phase !== "confirm") return;
-    const ok = onSend();
+    const ok = await onSend();
     if (!ok) {
       onClose();
       return;
@@ -192,7 +191,7 @@ export function CouponSendDialog({ coupon, to, onSend, onClose }: CouponSendDial
                 <p className={styles.eyebrow}>Черновик → книжка</p>
                 <h2 id="send-dialog-title" className={styles.title}>
                   {phase === "confirm"
-                    ? `Отправить ${recipient.name}?`
+                    ? `Отправить ${recipientName}?`
                     : "Купон улетел!"}
                 </h2>
               </div>
@@ -233,7 +232,7 @@ export function CouponSendDialog({ coupon, to, onSend, onClose }: CouponSendDial
                 </motion.div>
 
                 <motion.p variants={itemVariants} id="send-dialog-desc" className={styles.desc}>
-                  {recipient.name} сможет выкупить его за{" "}
+                  {recipientName} сможет выкупить его за{" "}
                   <strong className={styles.descPrice}>
                     <HeartIcon className={styles.descHeart} />
                     {coupon.price}
@@ -253,7 +252,7 @@ export function CouponSendDialog({ coupon, to, onSend, onClose }: CouponSendDial
                     className={styles.submit}
                   >
                     <PlaneIcon className={styles.submitIcon} />
-                    Отправить {recipient.name}
+                    Отправить {recipientName}
                   </motion.button>
                 </motion.div>
               </>
@@ -277,7 +276,7 @@ export function CouponSendDialog({ coupon, to, onSend, onClose }: CouponSendDial
                 </motion.span>
                 <p className={styles.successTitle}>Купон в пути</p>
                 <p className={styles.successSub}>
-                  {recipient.name} найдёт «{coupon.title}» в книжке купонов
+                  {recipientName} найдёт «{coupon.title}» в книжке купонов
                 </p>
               </motion.div>
             )}

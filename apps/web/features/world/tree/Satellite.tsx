@@ -1,7 +1,7 @@
 import Link from "next/link";
 import styles from "./OrbitalStage.module.css";
 import { cn } from "@/lib/utils";
-import type { WorldSatellite, WorldIcon } from "@/lib/data/worldStatus";
+import type { Satellite as WorldSatellite, WorldIcon } from "@/lib/types";
 import {
   MemoryIcon,
   MoodIcon,

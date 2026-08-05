@@ -4,11 +4,9 @@ import { useCallback, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import { coupleProfile, findPersonByGender } from "@/features/world/profile/couple";
-import { useHearts } from "@/features/world/hearts/useHearts";
+import { useCouple, useCoupons, useHearts } from "@/lib/api-data";
+import type { CouponView } from "@/lib/types";
 import { HeartsHistoryModal } from "@/features/world/hearts/HeartsHistoryModal";
-import { useCoupons, type NewCouponInput } from "./useCoupons";
-import type { AuthorId, Coupon } from "@/lib/data/coupons";
 import { CouponConfirm } from "./CouponConfirm";
 import { CouponComposer } from "./CouponComposer";
 import { CouponSendDialog } from "./CouponSendDialog";
@@ -51,20 +49,29 @@ const itemVariants = {
 
 type Tab = "book" | "drafts";
 
+/** Метка «23 июля» от ISO-строки — компактно, для подписи погашенного. */
+function redeemedLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+}
+
 export function CouponsPage() {
   const reduced = useReducedMotion();
   const { gender } = useGender();
 
   // «Я» — тот, чей мир сейчас в цвете; его сердечки платят за выкуп.
-  const me = findPersonByGender(gender);
-  const partner = coupleProfile.members.find((m) => m.id !== me.id) ?? me;
+  const { data: coupleData } = useCouple();
+  const me = coupleData?.me;
+  const partner = coupleData?.couple.members.find((m) => m.id !== me?.id);
 
-  const { coupons, create, send, remove, redeem } = useCoupons();
-  const { balance, history, spend } = useHearts(me.id);
+  const { data: couponsData, create, send, redeem, remove } = useCoupons();
+  const coupons = couponsData ?? [];
+  const { data: wallet, reload: reloadWallet } = useHearts();
+  const balance = wallet?.balance ?? 0;
 
   const [tab, setTab] = useState<Tab>("book");
-  const [pending, setPending] = useState<Coupon | null>(null); // подтверждение выкупа
-  const [sending, setSending] = useState<Coupon | null>(null); // отправка черновика
+  const [pending, setPending] = useState<CouponView | null>(null); // подтверждение выкупа
+  const [sending, setSending] = useState<CouponView | null>(null); // отправка черновика
   const [composing, setComposing] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -78,36 +85,56 @@ export function CouponsPage() {
    * помечает купон погашенным. True, если выкуп произошёл.
    */
   const handleRedeem = useCallback(
-    (coupon: Coupon): boolean => {
+    async (coupon: CouponView): Promise<boolean> => {
+      if (!me) return false;
       if (balance < coupon.price) return false;
-      const ok = spend(coupon.price, "coupon_redeem", coupon.title);
+      const ok = await redeem(coupon.id);
       if (!ok) return false;
-      return redeem(coupon.id, me.id as AuthorId);
+      reloadWallet();
+      return true;
     },
-    [balance, spend, redeem, me.id],
+    [balance, redeem, reloadWallet, me],
   );
 
   /** Создаёт черновик и переключает на вкладку «Черновики». */
   const handleCreate = useCallback(
-    (input: NewCouponInput): boolean => {
-      const created = create(input, me.id as AuthorId);
+    async (input: {
+      emoji: string;
+      title: string;
+      description: string;
+      price: number;
+    }): Promise<boolean> => {
+      const created = await create(input);
       if (!created) return false;
       setComposing(false);
       setTab("drafts");
       return true;
     },
-    [create, me.id],
+    [create],
   );
 
   /** Отправляет черновик партнёру (draft → active). */
   const handleSend = useCallback(
-    (coupon: Coupon): boolean => send(coupon.id, partner.id as AuthorId),
-    [send, partner.id],
+    async (coupon: CouponView): Promise<boolean> => {
+      if (!me || !partner) return false;
+      const ok = await send(coupon.id, partner.id);
+      if (!ok) return false;
+      reloadWallet();
+      return true;
+    },
+    [send, partner, me, reloadWallet],
   );
 
-  const openConfirm = useCallback((coupon: Coupon) => setPending(coupon), []);
+  const handleDeleteDraft = useCallback(
+    (coupon: CouponView) => {
+      void remove(coupon.id);
+    },
+    [remove],
+  );
+
+  const openConfirm = useCallback((coupon: CouponView) => setPending(coupon), []);
   const closeConfirm = useCallback(() => setPending(null), []);
-  const openSend = useCallback((coupon: Coupon) => setSending(coupon), []);
+  const openSend = useCallback((coupon: CouponView) => setSending(coupon), []);
   const closeSend = useCallback(() => setSending(null), []);
 
   return (
@@ -293,9 +320,9 @@ export function CouponsPage() {
                 >
                   <DraftCard
                     coupon={coupon}
-                    partnerName={partner.name}
+                    partnerName={partner?.name ?? "половинке"}
                     onSend={() => openSend(coupon)}
-                    onDelete={() => remove(coupon.id)}
+                    onDelete={() => handleDeleteDraft(coupon)}
                   />
                 </motion.li>
               ))}
@@ -318,7 +345,6 @@ export function CouponsPage() {
       {sending && (
         <CouponSendDialog
           coupon={sending}
-          to={partner.id as AuthorId}
           onSend={() => handleSend(sending)}
           onClose={closeSend}
         />
@@ -336,7 +362,7 @@ export function CouponsPage() {
       {historyOpen && (
         <HeartsHistoryModal
           balance={balance}
-          history={history}
+          history={wallet?.history ?? []}
           onClose={() => setHistoryOpen(false)}
         />
       )}
@@ -345,10 +371,10 @@ export function CouponsPage() {
 }
 
 /** Билет-карточка купона: активный — кнопка, открывающая выкуп. */
-function CouponCard({ coupon, onOpen }: { coupon: Coupon; onOpen: () => void }) {
+function CouponCard({ coupon, onOpen }: { coupon: CouponView; onOpen: () => void }) {
   const reduced = useReducedMotion();
   const isActive = coupon.status === "active";
-  const payerName = coupon.redeemedBy === "dima" ? "Дима" : "Аня";
+  const payerName = coupon.redeemedBy?.name ?? "партнёр";
   const className = cn(
     styles.card,
     isActive ? styles.cardActive : styles.cardRedeemed,
@@ -401,7 +427,7 @@ function CouponCard({ coupon, onOpen }: { coupon: Coupon; onOpen: () => void }) 
             </span>
           ) : (
             <span className={styles.cardUsed}>
-              Погашен {coupon.redeemedAt} · {payerName}
+              Погашен {coupon.redeemedAt ? redeemedLabel(coupon.redeemedAt) : ""} · {payerName}
             </span>
           )}
         </span>
@@ -435,7 +461,7 @@ function DraftCard({
   onSend,
   onDelete,
 }: {
-  coupon: Coupon;
+  coupon: CouponView;
   partnerName: string;
   onSend: () => void;
   onDelete: () => void;

@@ -144,7 +144,7 @@ export function ProfileCard({
       }}
     >
       <motion.article
-        className={cn(styles.card, active && styles.cardActive)}
+        className={cn(styles.card, active && styles.cardActive, isViewer && styles.cardOwn)}
         role="option"
         aria-selected={active}
         aria-label={`${person.name} — ${person.tagline}`}
@@ -183,9 +183,21 @@ export function ProfileCard({
               </>
             )}
 
-            {/* Кнопка загрузки аватарки — только на своей карточке при наведении. */}
+            {/* Градиентная вуаль, чтобы текст читался на любом фоне. */}
+            <div className={styles.scrim} aria-hidden />
+
+            {/* Матовое стекло — появляется при наведении на свою карточку.
+                Создаёт красивый эффект «выхода из фокуса» без грубого блюра. */}
+            {isViewer && <div className={styles.frost} aria-hidden />}
+
+            {/* Иконка смены фото — поверх матового слоя, правый верхний угол. */}
             {isViewer && (
-              <div className={cn(styles.photoActions, isUploading && styles.photoActionsLoading)}>
+              <div
+                className={cn(
+                  styles.ownActions,
+                  isUploading && styles.ownActionsLoading,
+                )}
+              >
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -197,34 +209,32 @@ export function ProfileCard({
                 <button
                   type="button"
                   className={styles.cameraBtn}
-                  onClick={triggerFileSelect}
-                  aria-label={photoPreview || person.photo ? "Сменить аватарку" : "Загрузить аватарку"}
+                  onClick={(e) => { e.stopPropagation(); triggerFileSelect(); }}
+                  aria-label="Сменить фото"
+                  title="Сменить фото"
                   disabled={isUploading}
                 >
                   {isUploading ? (
                     <span className={styles.spinner} aria-hidden />
-                  ) : photoPreview || person.photo ? (
-                    <span aria-hidden>✎</span>
                   ) : (
-                    <span aria-hidden>📷</span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M14.5 4H9.5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4l-1.5-2z" />
+                      <circle cx="12" cy="13" r="3.5" />
+                    </svg>
                   )}
                 </button>
-                {(photoPreview || person.photo) && (
-                  <button
-                    type="button"
-                    className={styles.removeBtn}
-                    onClick={(e) => { e.stopPropagation(); removePhoto(); }}
-                    aria-label="Удалить аватарку"
-                    disabled={isUploading}
-                  >
-                    <span aria-hidden>✕</span>
-                  </button>
-                )}
               </div>
             )}
-
-            {/* Градиентная вуаль, чтобы текст читался на любом фоне. */}
-            <div className={styles.scrim} aria-hidden />
 
             <span className={styles.roleChip}>{person.role}</span>
 

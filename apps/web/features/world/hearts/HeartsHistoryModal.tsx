@@ -14,7 +14,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useGender } from "@/lib/theme";
-import { TX_META, type HeartTx } from "@/lib/data/hearts";
+import type { HeartTx } from "@/lib/types";
+import { TX_META } from "./txMeta";
 import styles from "./HeartsHistoryModal.module.css";
 
 interface HeartsHistoryModalProps {
@@ -23,15 +24,24 @@ interface HeartsHistoryModalProps {
   onClose: () => void;
 }
 
+/** SSR-safe метка «5 августа» от таймстампа — только на клиенте. */
+function dayLabel(ts: number): string {
+  return new Date(ts).toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+  });
+}
+
 /** Группирует транзакции по метке дня, сохраняя порядок (свежие сверху). */
 function groupByDay(txs: HeartTx[]): { day: string; txs: HeartTx[] }[] {
   const groups: { day: string; txs: HeartTx[] }[] = [];
   for (const tx of txs) {
+    const label = dayLabel(tx.ts);
     const last = groups[groups.length - 1];
-    if (last && last.day === tx.at) {
+    if (last && last.day === label) {
       last.txs.push(tx);
     } else {
-      groups.push({ day: tx.at, txs: [tx] });
+      groups.push({ day: label, txs: [tx] });
     }
   }
   return groups;

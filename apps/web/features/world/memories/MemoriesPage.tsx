@@ -50,7 +50,7 @@ const itemVariants = {
  */
 export function MemoriesPage() {
   const reduced = useReducedMotion();
-  const { memories, addMemory, storageNearFull } = useMemories();
+  const { memories, addMemory, storageNearFull, loading } = useMemories();
 
   const [composerOpen, setComposerOpen] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -83,14 +83,10 @@ export function MemoriesPage() {
     errorTimer.current = setTimeout(() => setError(null), 4200);
   }, []);
 
-  function handleSave(draft: AddMemoryInput): boolean {
-    const result = addMemory(draft);
+  async function handleSave(draft: AddMemoryInput): Promise<boolean> {
+    const result = await addMemory(draft);
     if (!result.ok) {
-      showError(
-        result.quota
-          ? "Хранилище переполнено — удали лишние фото или видео"
-          : "Не удалось сохранить воспоминание",
-      );
+      showError("Не удалось сохранить воспоминание — попробуйте ещё раз");
       return false;
     }
     setComposerOpen(false);
@@ -199,7 +195,8 @@ export function MemoriesPage() {
 
       {/* Сетка полароидов */}
       {memories.length === 0 ? (
-        <EmptyState onCreate={() => setComposerOpen(true)} />
+        // Пока метаданные грузятся с сервера — не решаем «пусто»
+        !loading && <EmptyState onCreate={() => setComposerOpen(true)} />
       ) : (
         <motion.ul
           className={styles.grid}

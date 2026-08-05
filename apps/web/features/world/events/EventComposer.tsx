@@ -14,8 +14,8 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import { toISODate, type EventKind } from "@/lib/data/events";
-import type { NewEventInput } from "./useEvents";
+import { toISODate } from "@/lib/dateUtils";
+import type { EventKind } from "@/lib/types";
 import { HeartIcon, PlusIcon, StarIcon, TicketIcon } from "./icons";
 import styles from "./EventComposer.module.css";
 
@@ -50,7 +50,7 @@ const itemVariants = {
 
 interface EventComposerProps {
   /** Создаёт событие; возвращает false, если запись не сохранилась. */
-  onCreate: (input: NewEventInput) => boolean;
+  onCreate: (input: { kind: EventKind; title: string; date: string }) => Promise<boolean>;
   onClose: () => void;
   /** Начальная дата (ISO) — выбранный день календаря; иначе «сегодня». */
   initialDate?: string;
@@ -121,7 +121,7 @@ export function EventComposer({ onCreate, onClose, initialDate }: EventComposerP
   }, [onClose]);
 
   const submit = useCallback(
-    (event: React.FormEvent) => {
+    async (event: React.FormEvent) => {
       event.preventDefault();
       const t = title.trim();
       if (!t) {
@@ -133,7 +133,7 @@ export function EventComposer({ onCreate, onClose, initialDate }: EventComposerP
         return;
       }
       setError(undefined);
-      const ok = onCreate({ kind, title: t, date });
+      const ok = await onCreate({ kind, title: t, date });
       if (!ok) {
         setError("Не получилось сохранить дату — попробуйте ещё раз");
         return;

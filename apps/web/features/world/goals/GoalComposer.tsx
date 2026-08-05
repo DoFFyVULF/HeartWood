@@ -14,8 +14,7 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGender } from "@/lib/theme";
-import type { GoalKind } from "@/lib/data/goals";
-import type { NewGoalInput } from "./useGoals";
+import type { GoalKind } from "@/lib/types";
 import { PlaneIcon, PlusIcon, RubleIcon, SofaIcon, SunsetIcon } from "./icons";
 import styles from "./GoalComposer.module.css";
 
@@ -52,8 +51,8 @@ const itemVariants = {
 };
 
 interface GoalComposerProps {
-  /** Создаёт цель; возвращает null, если запись не сохранилась. */
-  onCreate: (input: NewGoalInput) => boolean;
+  /** Создаёт цель; возвращает false, если запись не сохранилась. */
+  onCreate: (input: { kind: GoalKind; title: string; target: number }) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -122,7 +121,7 @@ export function GoalComposer({ onCreate, onClose }: GoalComposerProps) {
   }, [onClose]);
 
   const submit = useCallback(
-    (event: React.FormEvent) => {
+    async (event: React.FormEvent) => {
       event.preventDefault();
       const t = title.trim();
       if (!t) {
@@ -134,7 +133,7 @@ export function GoalComposer({ onCreate, onClose }: GoalComposerProps) {
         return;
       }
       setError(undefined);
-      const ok = onCreate({ kind, title: t, target });
+      const ok = await onCreate({ kind, title: t, target });
       if (!ok) {
         setError("Не получилось сохранить цель — попробуйте ещё раз");
         return;

@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { GENDER_PALETTE, type ProfilePerson } from "@/features/world/profile/couple";
+import {
+  GENDER_PALETTE,
+  type MemberLiveliness,
+  type ProfilePerson,
+} from "@/features/world/profile/couple";
 import { ProfileCard, type CardPose } from "@/features/world/profile/ProfileCard";
 import styles from "./ProfileDeck.module.css";
 
@@ -48,9 +52,23 @@ interface ProfileDeckProps {
   activeId: string;
   since: string;
   onSelect: (id: string) => void;
+  /** id текущего пользователя — его карточка показывает «Вы в фокусе». */
+  viewerId: string;
+  /** Живость по id участника. */
+  liveliness: Record<string, MemberLiveliness>;
+  /** Взаимные реакции пары за месяц. */
+  mutualCount: number;
 }
 
-export function ProfileDeck({ members, activeId, since, onSelect }: ProfileDeckProps) {
+export function ProfileDeck({
+  members,
+  activeId,
+  since,
+  onSelect,
+  viewerId,
+  liveliness,
+  mutualCount,
+}: ProfileDeckProps) {
   const reduced = useReducedMotion();
   const { peekX, peekY, scale } = usePoseGeometry();
   const cardRefs = useRef(new Map<string, HTMLDivElement>());
@@ -160,6 +178,12 @@ export function ProfileDeck({ members, activeId, since, onSelect }: ProfileDeckP
             active={person.id === activeId}
             bobDelay={i * -2.2}
             onClick={() => onSelect(person.id)}
+            viewerId={viewerId}
+            presence={
+              liveliness[person.id]?.presence ?? { state: "away", label: "не в сети" }
+            }
+            reactions={liveliness[person.id]?.reactions ?? []}
+            mutualCount={mutualCount}
           />
         ))}
 

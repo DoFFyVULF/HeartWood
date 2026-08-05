@@ -20,7 +20,7 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useGender } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-import type { Coupon } from "@/lib/data/coupons";
+import type { CouponView } from "@/lib/types";
 import { CheckIcon, HeartIcon } from "./icons";
 import { couponNumber } from "./number";
 import styles from "./CouponConfirm.module.css";
@@ -65,7 +65,7 @@ const medallionVariants = {
 type Phase = "confirm" | "success";
 
 interface CouponConfirmProps {
-  coupon: Coupon;
+  coupon: CouponView;
   /**
    * Хватает ли у выкупающего сердечек на цену. Если нет — подтверждение
    * недоступно и вместо цены показывается «Не хватает N сердечек».
@@ -73,7 +73,7 @@ interface CouponConfirmProps {
   canAfford: boolean;
   onClose: () => void;
   /** Гасит купон; возвращает, действительно ли погашение произошло. */
-  onConfirm: () => boolean;
+  onConfirm: () => Promise<boolean>;
 }
 
 export function CouponConfirm({ coupon, canAfford, onClose, onConfirm }: CouponConfirmProps) {
@@ -157,9 +157,9 @@ export function CouponConfirm({ coupon, canAfford, onClose, onConfirm }: CouponC
     [],
   );
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback(async () => {
     if (phase !== "confirm") return;
-    const ok = onConfirm();
+    const ok = await onConfirm();
     if (!ok) {
       onClose();
       return;
