@@ -5,8 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { worldStatus } from "@/lib/data/worldStatus";
-import { QuickAddSheet } from "@/components/layout/QuickAddSheet";
+import { useAuth } from "@/lib/auth";
 import { StreakBadge } from "@/components/layout/StreakBadge";
 import { MailboxEnvelope } from "@/components/layout/MailboxEnvelope";
 import { MoodPicker } from "@/components/layout/MoodPicker";
@@ -28,6 +27,7 @@ const NAV_ITEMS: ReadonlyArray<{ label: string; path: string | null }> = [
 export function Header() {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+  const { couple } = useAuth();
   const [indicatorStyle, setIndicatorStyle] = useState({});
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
@@ -43,10 +43,15 @@ export function Header() {
     });
   }, [pathname]);
 
-  const initials = worldStatus.couple
+  const coupleName = couple?.coupleName ?? "";
+  const initials = coupleName
     .split(" ")
     .map((name) => name[0])
     .join("");
+
+  // Половинка ещё не присоединилась? В её кружочке — вопросительный знак.
+  const memberCount = couple?.members.length ?? 0;
+  const hasPartner = memberCount >= 2;
 
   // Entrance animation trigger
   useEffect(() => {
@@ -162,7 +167,7 @@ export function Header() {
           {/* Couple avatars → профиль пары */}
           <Link
             href={routes.profile.path}
-            aria-label={`Профиль пары: ${worldStatus.couple}`}
+            aria-label={`Профиль пары: ${coupleName || "HeartWood"}`}
             className={cn(
               "group/avatars flex shrink-0 -space-x-2 transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)",
               styles.avatars
@@ -182,7 +187,7 @@ export function Header() {
                 styles.avatarSecond
               )}
             >
-              {initials[1]}
+              {hasPartner ? (couple?.members[1]?.name?.[0] ?? "?") : "?"}
             </span>
             {/* Heart burst on hover */}
             <span className={styles.heartBurst} aria-hidden>
@@ -195,21 +200,6 @@ export function Header() {
 
           {/* Текущее настроение — выбор прямо из хедера */}
           <MoodPicker />
-
-          {/* Quick add */}
-          <QuickAddSheet />
-
-          {/* Settings ghost */}
-          <button
-            type="button"
-            aria-label="Настройки"
-            className={cn(
-              "hidden size-10 items-center justify-center rounded-full text-lg text-(--hwd-ink-soft) transition-all duration-300 hover:bg-white/60 hover:text-(--hwd-ink) hover:rotate-90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow) sm:flex",
-              styles.settings
-            )}
-          >
-            <span aria-hidden>⚙️</span>
-          </button>
         </div>
       </div>
     </header>

@@ -1,15 +1,13 @@
 "use client";
 
+import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import {
-  GENDER_PALETTE,
-  coupleProfile,
-  type ProfilePerson,
-} from "@/features/world/profile/couple";
-import { liveliness } from "@/lib/data/liveliness";
+import { GENDER_PALETTE, type ProfilePerson } from "@/features/world/profile/couple";
+import { findMood } from "@/lib/moods";
 import { useMood } from "@/lib/mood";
+import { api } from "@/lib/api";
 import styles from "./ProfileCard.module.css";
 
 /** Поза карточки в карусели — всё, что анимирует framer-motion. */
@@ -36,9 +34,20 @@ interface ProfileCardProps {
   onClick: () => void;
   /** React 19 — ref передаётся обычным пропом, forwardRef не нужен. */
   ref?: React.Ref<HTMLDivElement>;
+  /** id текущего пользователя — его карточка показывает «Вы в фокусе». */
+  viewerId: string;
+  /** Присутствие участника из /couple. */
+  presence: { state: string; label: string };
+  /** Реакции партнёра на карточку этого участника. */
+  reactions: Array<{ emoji: string; count: number }>;
+  /** Взаимные реакции пары за месяц — общий счётчик на обеих карточках. */
+  mutualCount: number;
 }
 
 const SPRING = { type: "spring", stiffness: 220, damping: 24, mass: 0.9 } as const;
+
+/** Настроение, если у участника оно ещё не выбрано. */
+const FALLBACK_MOOD = { emoji: "😊", label: "в порядке" };
 
 export function ProfileCard({
   person,
@@ -49,23 +58,79 @@ export function ProfileCard({
   bobDelay,
   onClick,
   ref,
+  viewerId,
+  presence,
+  reactions,
+  mutualCount,
 }: ProfileCardProps) {
   const reduced = useReducedMotion();
   const palette = GENDER_PALETTE[person.gender];
   const partnerPalette = GENDER_PALETTE[partner.gender];
 
   // Живость карточки: присутствие, настроение и реакции этого участника.
-  // На карточке «вашего» участника (primaryId) статус заменяется на «Вы в фокусе».
-  const liv = liveliness.members[person.id];
-  const isViewer = person.id === coupleProfile.primaryId;
-  const presenceLive = !isViewer && liv.presence.state === "online";
-  const presenceLabel = isViewer ? "Вы в фокусе" : liv.presence.label;
+  // На карточке «вашего» участника (viewerId) статус заменяется на «Вы в фокусе».
+  const isViewer = person.id === viewerId;
+  const presenceLive = !isViewer && presence.state === "online";
+  const presenceLabel = isViewer ? "Вы в фокусе" : presence.label;
 
   // Своё настроение, выбранное в хедере, «ваша» карточка показывает живым;
-  // пока ничего не выбрано — базовое из liveliness. Карточка партнёра всегда
-  // читает базовые данные.
+  // партнёр всегда читает базовое настроение из /couple.
   const { mood: liveMood } = useMood();
-  const displayedMood = isViewer && liveMood ? liveMood : liv.mood;
+  const baseMood = findMood(person.mood ?? "");
+  const displayedMood =
+    isViewer && liveMood
+      ? liveMood
+      : baseMood ?? FALLBACK_MOOD;
+
+  // Аватарка: загрузка только для своей карточки
+  const [photoPreview, setPhotoPreview] = useState<string | null>(person.photo ?? null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setIsUploading(true);
+    try {
+      // Создаём data URL для мгновенного превью
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      setPhotoPreview(dataUrl);
+      // Отправляем на сервер
+      await api.updateMe({ photo: dataUrl });
+    } catch (e) {
+      console.error("Failed to upload photo", e);
+      setPhotoPreview(person.photo ?? null);
+    } finally {
+      setIsUploading(false);
+    }
+  }, [person.photo]);
+
+  const triggerFileSelect = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handlePhotoChange(file);
+    if (e.target) e.target.value = "";
+  }, [handlePhotoChange]);
+
+  const removePhoto = useCallback(async () => {
+    setIsUploading(true);
+    try {
+      setPhotoPreview(null);
+      await api.updateMe({ photo: "" });
+    } catch (e) {
+      console.error("Failed to remove photo", e);
+      setPhotoPreview(person.photo ?? null);
+    } finally {
+      setIsUploading(false);
+    }
+  }, [person.photo]);
 
   return (
     <div
@@ -98,13 +163,13 @@ export function ProfileCard({
               background: `linear-gradient(160deg, ${palette.primary} 0%, ${palette.deep} 100%)`,
             }}
           >
-            {person.photo ? (
+            {(photoPreview || person.photo) ? (
               <Image
-                src={person.photo}
+                src={photoPreview ?? person.photo!}
                 alt={`Фото ${person.name}`}
                 fill
                 sizes="(min-width: 1024px) 340px, 72vw"
-                style={{ objectFit: "cover" }}
+                style={{ objectFit: "cover", opacity: isUploading ? 0.5 : 1 }}
               />
             ) : (
               <>
@@ -116,6 +181,46 @@ export function ProfileCard({
                 </span>
                 <span className={styles.texture} aria-hidden />
               </>
+            )}
+
+            {/* Кнопка загрузки аватарки — только на своей карточке при наведении. */}
+            {isViewer && (
+              <div className={cn(styles.photoActions, isUploading && styles.photoActionsLoading)}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className={styles.fileInput}
+                  aria-label="Выбрать аватарку"
+                />
+                <button
+                  type="button"
+                  className={styles.cameraBtn}
+                  onClick={triggerFileSelect}
+                  aria-label={photoPreview || person.photo ? "Сменить аватарку" : "Загрузить аватарку"}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <span className={styles.spinner} aria-hidden />
+                  ) : photoPreview || person.photo ? (
+                    <span aria-hidden>✎</span>
+                  ) : (
+                    <span aria-hidden>📷</span>
+                  )}
+                </button>
+                {(photoPreview || person.photo) && (
+                  <button
+                    type="button"
+                    className={styles.removeBtn}
+                    onClick={(e) => { e.stopPropagation(); removePhoto(); }}
+                    aria-label="Удалить аватарку"
+                    disabled={isUploading}
+                  >
+                    <span aria-hidden>✕</span>
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Градиентная вуаль, чтобы текст читался на любом фоне. */}
@@ -156,7 +261,7 @@ export function ProfileCard({
                   role="list"
                   aria-label={`Реакции на карточке ${person.name}`}
                 >
-                  {liv.reactions.map((reaction, i) => (
+                  {reactions.map((reaction, i) => (
                     <span key={i} role="listitem" className={styles.reactionPill}>
                       <span aria-hidden>{reaction.emoji}</span>
                       <span>{reaction.count}</span>
@@ -165,10 +270,10 @@ export function ProfileCard({
                 </span>
                 <span
                   className={styles.mutual}
-                  aria-label={`${liveliness.mutualCount} взаимных реакций за месяц`}
+                  aria-label={`${mutualCount} взаимных реакций за месяц`}
                 >
                   <span aria-hidden>🔁</span>
-                  <span>{liveliness.mutualCount} за месяц</span>
+                  <span>{mutualCount} за месяц</span>
                 </span>
               </motion.div>
 

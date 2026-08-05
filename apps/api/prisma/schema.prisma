@@ -71,6 +71,8 @@ model User {
   emoji        String?
   /// Короткая подпись под именем на карточке профиля.
   tagline      String?
+  /// Аватарка пользователя — URL (например, "/people/<id>.webp").
+  photo        String?
   role         CoupleRole  @default(primary)
   couple       Couple?     @relation(fields: [coupleId], references: [id], onDelete: Cascade)
   coupleId     String?

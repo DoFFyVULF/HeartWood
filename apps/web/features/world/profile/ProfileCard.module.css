@@ -342,12 +342,94 @@
   }
 }
 
+/* Кнопка загрузки аватарки — появляется на своей карточке при наведении. */
+.photoActions {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.card:hover .photoActions,
+.card:focus-within .photoActions {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.photoActionsLoading {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.fileInput {
+  display: none;
+}
+
+.cameraBtn,
+.removeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--hwd-ink);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 27, 60, 0.25);
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.cameraBtn:hover:not(:disabled),
+.removeBtn:hover:not(:disabled) {
+  transform: scale(1.1);
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(30, 27, 60, 0.3);
+}
+
+.cameraBtn:active:not(:disabled),
+.removeBtn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.cameraBtn:disabled,
+.removeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(59, 130, 246, 0.3);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ─────────────── REDUCED MOTION ─────────────── */
 @media (prefers-reduced-motion: reduce) {
   .slot,
   .emoji,
   .presenceDotLive,
-  .edgeGlowLive {
+  .edgeGlowLive,
+  .spinner {
     animation: none;
   }
   .card {

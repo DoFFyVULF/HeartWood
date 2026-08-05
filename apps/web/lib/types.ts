@@ -15,6 +15,7 @@ export interface PublicUser {
   mood: string | null;
   emoji: string | null;
   tagline: string | null;
+  photo: string | null;
   role: CoupleRole;
 }
 
@@ -53,6 +54,7 @@ export interface UpdateMeInput {
   emoji?: string;
   tagline?: string;
   mood?: string;
+  photo?: string;
 }
 
 // ─── Пара (профиль, шапка) ───────────────────────────────────────────────
