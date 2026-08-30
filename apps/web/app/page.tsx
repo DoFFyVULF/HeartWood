@@ -231,114 +231,75 @@ function LandingHeader() {
   );
 }
 
-// ——— Hero ———
+// ——— Hero — минимал, editorial: воздух, типографика, одно сердце ———
 
 function Hero() {
   return (
     <section className="relative">
-      <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-5 py-10 sm:px-8 sm:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8 lg:px-12 lg:py-10 xl:py-14">
-        {/* Левая колонка — текст */}
-        <div className={`${motion.enter} flex flex-col items-start text-left`}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--hwd-primary)_22%,transparent)] bg-white/70 px-3.5 py-1.5 text-xs font-extrabold tracking-wide text-(--hwd-primary-deep) shadow-sm backdrop-blur-md">
-            <span aria-hidden className="size-2 rounded-full bg-(--hwd-primary) shadow-[0_0_10px_var(--hwd-glow)]" />
-            Живой мир для вашей пары
-            <span className="hidden rounded-full bg-(--hwd-primary-soft) px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-(--hwd-primary-deep) sm:inline-flex">New · Дерево 2.0</span>
-          </span>
-
-          <h1 className="mt-5 max-w-[20ch] text-[2.2rem] font-black leading-[0.95] tracking-tight text-(--hwd-ink) sm:text-[2.7rem] lg:text-[3.05rem]">
-            Ваш мир
-            <br />
-            <span className="bg-[linear-gradient(90deg,var(--hwd-primary),var(--hwd-primary-deep))] bg-clip-text text-transparent">растёт</span>{" "}
-            вместе с вами
-            <span className="ml-2 inline-block align-middle font-[var(--font-caveat)] text-[1.25em] font-bold leading-none text-(--hwd-primary-deep) sm:text-[1.15em]">— каждый день</span>
-          </h1>
-
-          <p className="mt-4 max-w-[44ch] text-[1.02rem] font-semibold leading-relaxed text-(--hwd-ink-soft) sm:text-[1.08rem]">
-            Свидания, воспоминания, купоны, письма от руки и общее дерево — всё в одном уютном пространстве. Без ленты, без шума. Только вы двое.
-          </p>
-
-          <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Link
-              href={routes.register.path}
-              className="inline-flex items-center gap-2 rounded-full bg-(--hwd-primary) px-7 py-3.5 text-[15px] font-black text-white shadow-[0_16px_30px_-14px_var(--hwd-glow),0_8px_18px_-10px_var(--hwd-primary-deep)] transition hover:translate-y-[-2px] hover:bg-(--hwd-primary-deep) focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)"
-            >
-              Создать ваш мир <ArrowIcon className="size-4" />
-            </Link>
-            <a
-              href="#features"
-              className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-6 py-3.5 text-sm font-extrabold text-(--hwd-ink) backdrop-blur-md transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow)"
-            >
-              Посмотреть возможности
-            </a>
+      {/* Тонкий верхный градиент-луч, как в шапке мира */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(70%_60%_at_50%_0%,rgba(255,255,255,0.9),transparent_65%)]" />
+      <div className="relative mx-auto flex max-w-[760px] flex-col items-center px-5 pb-10 pt-10 text-center sm:px-8 sm:pb-12 sm:pt-14">
+        {/* Сердце — лёгкий ореол */}
+        <div className="relative">
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 scale-[1.35] rounded-full bg-[radial-gradient(circle_at_50%_50%,var(--hwd-glow)_0%,transparent_62%)] opacity-70 blur-2xl"
+          />
+          <div className={`${motion.float} scale-[0.9] sm:scale-100`}>
+            <WorldArt />
           </div>
-
-          <ul className="mt-6 flex flex-wrap items-center gap-2 text-xs font-bold text-(--hwd-ink-soft)">
-            <li className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 backdrop-blur-md">
-              <CheckIcon className="size-3.5 text-emerald-500" /> Без рекламы
-            </li>
-            <li className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 backdrop-blur-md">
-              <CheckIcon className="size-3.5 text-emerald-500" /> Приватно для двоих
-            </li>
-            <li className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 backdrop-blur-md">
-              <CheckIcon className="size-3.5 text-emerald-500" /> За 2 минуты
-            </li>
-          </ul>
-
-          {/* мини-соцдоказательство */}
-          <div className="mt-8 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/60 px-4 py-3 backdrop-blur-md">
-            <div className="flex -space-x-2">
-              <span className="flex size-8 items-center justify-center rounded-full border-2 border-white bg-violet-100 text-sm">🌸</span>
-              <span className="flex size-8 items-center justify-center rounded-full border-2 border-white bg-sky-100 text-sm">💙</span>
-              <span className="flex size-8 items-center justify-center rounded-full border-2 border-white bg-amber-100 text-sm">✨</span>
-            </div>
-            <div className="text-left">
-              <div className="flex items-center gap-1 text-sm font-black text-(--hwd-ink)">
-                <span className="text-amber-400">★★★★★</span> 4.9/5
-              </div>
-              <p className="text-xs font-semibold text-(--hwd-ink-soft)">любят пары, которые уже растят свой сад</p>
-            </div>
+          {/* Единственная пилюля под сердцем — как в AuthShell */}
+          <div className="absolute -bottom-1 left-1/2 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/90 px-4 py-2 shadow-[0_12px_28px_-14px_rgba(0,0,0,0.18)] backdrop-blur-md">
+            <span aria-hidden className="text-sm">🔥</span>
+            <span className="text-xs font-black tracking-wide text-(--hwd-ink)">уже 127 дней</span>
+            <span className="hidden text-[11px] font-bold text-(--hwd-ink-soft) sm:inline">· ваш мир растёт</span>
           </div>
         </div>
 
-        {/* Правая колонка — визуал: аккуратная орбита вокруг сердца */}
-        <div className="relative flex justify-center overflow-visible px-8 py-6 sm:px-10 lg:justify-end lg:px-8">
-          <div className="relative">
-            {/* Само сердце — мягко парит */}
-            <div className={`${motion.float} relative`}>
-              <WorldArt />
-            </div>
+        <span className="mt-10 inline-flex items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--hwd-primary)_18%,transparent)] bg-white/70 px-3.5 py-1 text-xs font-extrabold tracking-wide text-(--hwd-primary-deep) backdrop-blur-md">
+          <span aria-hidden className="size-1.5 rounded-full bg-(--hwd-primary) shadow-[0_0_8px_var(--hwd-glow)]" />
+          Живой мир для вашей пары
+        </span>
 
-            {/* Воспоминание — левый-верх */}
-            <div
-              className={`${motion.float} absolute -left-8 top-7 hidden items-center gap-2.5 rounded-2xl border border-white/80 bg-white/90 px-3.5 py-2.5 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.18),0_4px_12px_-8px_rgba(0,0,0,0.08)] backdrop-blur-md sm:flex`}
-              style={{ animationDelay: "0s", animationDuration: "5.5s" }}
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-lg">💌</span>
-              <div className="min-w-0 text-left">
-                <p className="whitespace-nowrap text-xs font-black leading-tight text-(--hwd-ink)">Пикник у озера</p>
-                <p className="whitespace-nowrap text-[11px] font-bold leading-tight text-(--hwd-ink-soft)">вчера · + фото</p>
-              </div>
-            </div>
+        <h1 className="mt-4 max-w-[18ch] text-balance text-[2.45rem] font-black leading-[0.9] tracking-tight text-(--hwd-ink) sm:text-[3rem] lg:text-[3.35rem]">
+          Ваш мир <span className="bg-[linear-gradient(90deg,var(--hwd-primary),var(--hwd-primary-deep))] bg-clip-text text-transparent">растёт</span>
+          <br />
+          вместе с вами
+          <span className="mt-1 block font-[var(--font-caveat)] text-[1.05em] font-bold leading-none text-(--hwd-primary-deep)">— каждый день, по-чуть-чуть</span>
+        </h1>
 
-            {/* Купон — правый-низ, зеркально */}
-            <div
-              className={`${motion.float} absolute -right-8 bottom-7 hidden items-center gap-2.5 rounded-2xl border border-white/80 bg-white/90 px-3.5 py-2.5 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.18),0_4px_12px_-8px_rgba(0,0,0,0.08)] backdrop-blur-md sm:flex`}
-              style={{ animationDelay: "-1.8s", animationDuration: "6s" }}
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-lg">🎫</span>
-              <div className="min-w-0 text-left">
-                <p className="whitespace-nowrap text-xs font-black leading-tight text-(--hwd-ink)">Завтрак в постель</p>
-                <p className="whitespace-nowrap text-[11px] font-bold leading-tight text-emerald-600">купон · активен</p>
-              </div>
-            </div>
+        <p className="mx-auto mt-4 max-w-[46ch] text-pretty text-[15px] font-semibold leading-relaxed text-(--hwd-ink-soft) sm:text-[16px]">
+          Свидания, воспоминания, купоны, письма от руки и общее дерево — всё в одном уютном месте. Без ленты и шума. Только вы двое.
+        </p>
 
-            {/* Серия — строго по центру внизу, не обрезается */}
-            <div className="absolute bottom-0 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/80 bg-white/90 px-4 py-2 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.18)] backdrop-blur-md sm:inline-flex">
-              <span aria-hidden className="text-base">🔥</span>
-              <span className="whitespace-nowrap text-sm font-black text-(--hwd-ink)">127 дней подряд</span>
-              <span className="whitespace-nowrap rounded-full bg-(--hwd-primary-soft) px-2 py-0.5 text-xs font-black text-(--hwd-primary-deep)">серия</span>
-            </div>
-          </div>
+        <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href={routes.register.path}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-(--hwd-primary) px-8 py-3.5 text-[15px] font-black text-white shadow-[0_16px_32px_-16px_var(--hwd-glow)] transition hover:translate-y-[-1px] hover:bg-(--hwd-primary-deep) focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow) sm:w-auto"
+          >
+            Создать ваш мир <ArrowIcon className="size-4" />
+          </Link>
+          <a
+            href="#features"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/70 px-7 py-3.5 text-sm font-extrabold text-(--hwd-ink) backdrop-blur-md transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-(--hwd-glow) sm:w-auto"
+          >
+            Посмотреть возможности
+          </a>
+        </div>
+
+        <p className="mt-3 text-xs font-bold text-(--hwd-ink-soft)">Бесплатно · без рекламы · приватно для двоих · за 2 минуты</p>
+
+        <div className="mt-7 flex items-center gap-3 rounded-full border border-white/70 bg-white/65 px-4 py-2.5 backdrop-blur-md">
+          <span className="flex -space-x-2">
+            <span className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-violet-100 text-[13px]">🌸</span>
+            <span className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-sky-100 text-[13px]">💙</span>
+            <span className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-amber-100 text-[13px]">✨</span>
+          </span>
+          <span className="h-4 w-px bg-[color-mix(in_srgb,var(--hwd-ink-soft)_18%,transparent)]" aria-hidden />
+          <span className="flex items-center gap-1.5 text-xs font-black text-(--hwd-ink)">
+            <span className="text-amber-400">★★★★★</span> 4.9/5
+            <span className="hidden text-[11px] font-bold text-(--hwd-ink-soft) sm:inline">— пары растят свой сад</span>
+          </span>
         </div>
       </div>
     </section>
