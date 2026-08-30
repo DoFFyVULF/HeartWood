@@ -39,6 +39,11 @@
   --hwd-ink-soft: #a15f84;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem; /* sticky header 68px + запас */
+}
+
 ::selection {
   background: var(--hwd-primary-soft);
   color: var(--hwd-ink);
