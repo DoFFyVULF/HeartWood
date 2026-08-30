@@ -235,7 +235,7 @@ function LandingHeader() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative">
       <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-5 py-10 sm:px-8 sm:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8 lg:px-12 lg:py-10 xl:py-14">
         {/* Левая колонка — текст */}
         <div className={`${motion.enter} flex flex-col items-start text-left`}>
@@ -300,31 +300,43 @@ function Hero() {
           </div>
         </div>
 
-        {/* Правая колонка — визуал */}
-        <div className="relative flex justify-center lg:justify-end">
-          <div className={`${motion.float} relative`}>
-            <WorldArt />
-            {/* плавающая карточка — воспоминание */}
-            <div className="absolute -left-2 top-6 hidden rounded-2xl border border-white/70 bg-white/75 px-3 py-2.5 shadow-xl shadow-black/5 backdrop-blur-md sm:flex sm:items-center sm:gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-violet-100 text-lg">💌</span>
-              <div>
-                <p className="text-xs font-black text-(--hwd-ink)">Пикник у озера</p>
-                <p className="text-[11px] font-bold text-(--hwd-ink-soft)">вчера · + фото</p>
+        {/* Правая колонка — визуал: аккуратная орбита вокруг сердца */}
+        <div className="relative flex justify-center overflow-visible px-8 py-6 sm:px-10 lg:justify-end lg:px-8">
+          <div className="relative">
+            {/* Само сердце — мягко парит */}
+            <div className={`${motion.float} relative`}>
+              <WorldArt />
+            </div>
+
+            {/* Воспоминание — левый-верх */}
+            <div
+              className={`${motion.float} absolute -left-8 top-7 hidden items-center gap-2.5 rounded-2xl border border-white/80 bg-white/90 px-3.5 py-2.5 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.18),0_4px_12px_-8px_rgba(0,0,0,0.08)] backdrop-blur-md sm:flex`}
+              style={{ animationDelay: "0s", animationDuration: "5.5s" }}
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-lg">💌</span>
+              <div className="min-w-0 text-left">
+                <p className="whitespace-nowrap text-xs font-black leading-tight text-(--hwd-ink)">Пикник у озера</p>
+                <p className="whitespace-nowrap text-[11px] font-bold leading-tight text-(--hwd-ink-soft)">вчера · + фото</p>
               </div>
             </div>
-            {/* плавающая карточка — купон */}
-            <div className="absolute -right-1 bottom-10 hidden rounded-2xl border border-white/70 bg-white/75 px-3 py-2.5 shadow-xl shadow-black/5 backdrop-blur-md sm:flex sm:items-center sm:gap-2.5" style={{ animationDelay: "-2s" }}>
-              <span className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-lg">🎫</span>
-              <div>
-                <p className="text-xs font-black text-(--hwd-ink)">Завтрак в постель</p>
-                <p className="text-[11px] font-bold text-emerald-600">купон · активен</p>
+
+            {/* Купон — правый-низ, зеркально */}
+            <div
+              className={`${motion.float} absolute -right-8 bottom-7 hidden items-center gap-2.5 rounded-2xl border border-white/80 bg-white/90 px-3.5 py-2.5 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.18),0_4px_12px_-8px_rgba(0,0,0,0.08)] backdrop-blur-md sm:flex`}
+              style={{ animationDelay: "-1.8s", animationDuration: "6s" }}
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-lg">🎫</span>
+              <div className="min-w-0 text-left">
+                <p className="whitespace-nowrap text-xs font-black leading-tight text-(--hwd-ink)">Завтрак в постель</p>
+                <p className="whitespace-nowrap text-[11px] font-bold leading-tight text-emerald-600">купон · активен</p>
               </div>
             </div>
-            {/* бейдж серии */}
-            <div className="absolute -bottom-2 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 shadow-xl backdrop-blur-md sm:inline-flex">
+
+            {/* Серия — строго по центру внизу, не обрезается */}
+            <div className="absolute bottom-0 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/80 bg-white/90 px-4 py-2 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.18)] backdrop-blur-md sm:inline-flex">
               <span aria-hidden className="text-base">🔥</span>
-              <span className="text-sm font-black text-(--hwd-ink)">127 дней подряд</span>
-              <span className="rounded-full bg-(--hwd-primary-soft) px-2 py-0.5 text-xs font-black text-(--hwd-primary-deep)">серия</span>
+              <span className="whitespace-nowrap text-sm font-black text-(--hwd-ink)">127 дней подряд</span>
+              <span className="whitespace-nowrap rounded-full bg-(--hwd-primary-soft) px-2 py-0.5 text-xs font-black text-(--hwd-primary-deep)">серия</span>
             </div>
           </div>
         </div>
